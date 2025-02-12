@@ -2,6 +2,7 @@ import { auth } from "../config/firebase";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
+import '../App.css';
 
 export const Dashboard = () => {
     const navigate = useNavigate();

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import "./auth.css"; 
 
 export const Auth = () => {
     const [email, setEmail] = useState("");
@@ -16,23 +17,29 @@ export const Auth = () => {
             await signInWithEmailAndPassword(auth, email, password);
             navigate("/dashboard");
         } catch (err) {
-            setError("Invalid email or password. Please try again.");
+            setError("Podano błędne dane logowania.");
         }        
     };
 
     return (
-        <div>
-            <input 
-                placeholder="Email..." 
-                onChange={(e) => setEmail(e.target.value)}
-            />
-            <input 
-                placeholder="Password..."
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-            />
-            {error && <p style={{ color: "red" }}>{error}</p>}
-            <button onClick={login}>Login</button>
+        <div className="auth-container">
+            <div className="auth-box">
+                <h1>Login</h1>
+                <input 
+                    className="auth-input"
+                    placeholder="Email..." 
+                    type="email"
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                <input 
+                    className="auth-input"
+                    placeholder="Password..."
+                    type="password"
+                    onChange={(e) => setPassword(e.target.value)}
+                />
+                {error && <p className="error-message">{error}</p>}
+                <button className="auth-button" onClick={login}>Login</button>
+            </div>
         </div>
     );
 };
