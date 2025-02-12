@@ -1,13 +1,16 @@
-import logo from './logo.svg';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Dashboard } from "./pages/dashboard";
 import './App.css';
 import { Auth } from "./components/auth";
 
 function App() {
   return (
-    <div className="App">
-      <Auth />
-
-    </div>
+    <Router>
+      <Routes>
+          <Route path="/" element={<Auth />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
+      </Router>
   );
 }
 

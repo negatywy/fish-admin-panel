@@ -1,26 +1,22 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
-import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 export const Auth = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     console.log(auth?.currentUser?.email);
 
-    const signIn = async () => {
+    const login = async () => {
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            await signInWithEmailAndPassword(auth, email, password);
+            navigate("/dashboard");
         } catch (err) {
-            console.error(err);
-        }        
-    };
-
-    const logout = async () => {
-        try {
-            await signOut(auth);
-        } catch (err) {
-            console.error(err);
+            setError("Invalid email or password. Please try again.");
         }        
     };
 
@@ -35,8 +31,8 @@ export const Auth = () => {
                 type="password"
                 onChange={(e) => setPassword(e.target.value)}
             />
-            <button onClick={signIn}>Sign in</button>
-            <button onClick={logout}>Logout</button>
+            {error && <p style={{ color: "red" }}>{error}</p>}
+            <button onClick={login}>Login</button>
         </div>
     );
 };
