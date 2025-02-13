@@ -24,7 +24,7 @@ export const Auth = () => {
     return (
         <div className="auth-container">
             <div className="auth-box">
-                <h1>Login</h1>
+                <h1>Zaloguj się</h1>
                 <input 
                     className="auth-input"
                     placeholder="Email..." 
@@ -33,12 +33,12 @@ export const Auth = () => {
                 />
                 <input 
                     className="auth-input"
-                    placeholder="Password..."
+                    placeholder="Hasło..."
                     type="password"
                     onChange={(e) => setPassword(e.target.value)}
                 />
                 {error && <p className="error-message">{error}</p>}
-                <button className="auth-button" onClick={login}>Login</button>
+                <button className="auth-button" onClick={login}>Zaloguj się</button>
             </div>
         </div>
     );
