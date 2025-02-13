@@ -10,11 +10,20 @@
 
 .dashboard-container {
   display: flex;
+  height: 100vh; /* Cała wysokość ekranu */
 }
+
 .sidebar {
   width: 200px;
   background: #f4f4f4;
   padding: 10px;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto; /* Przewijanie w pionie */
+  height: 100%; /* Wykorzystaj całą dostępną przestrzeń */
 }
 .sidebar button {
   display: block;
@@ -22,7 +31,7 @@
   margin-bottom: 10px;
   padding: 10px;
 }
-.main-content {
+/* .main-content {
   flex: 1;
   padding: 20px;
-}
+} */
