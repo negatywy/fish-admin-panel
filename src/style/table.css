@@ -1,12 +1,12 @@
 .table-container {
     width: 100%;
-    max-height: 400px;  /* Ustaw maksymalną wysokość tabeli */
-    overflow-x: auto;   /* Przewijanie w poziomie */
-    overflow-y: auto;   /* Opcjonalnie, przewijanie w pionie */
+    max-height: 400px;  
+    overflow-x: auto;   
+    overflow-y: auto;   
   }
 
 table {
-    min-width: 800px; /* Możesz zwiększyć, jeśli kolumny są bardzo szerokie */
+    min-width: 800px; 
     border-collapse: collapse;
     margin-top: 20px;
 }
