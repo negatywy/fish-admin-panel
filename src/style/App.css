@@ -1,3 +1,7 @@
+body {
+  background-color: #EBEBEB;
+}
+
 .App {
   text-align: center;
 }
@@ -15,12 +19,14 @@
 
 .sidebar {
   width: 200px;
-  background: #f4f4f4;
+  background: linear-gradient(135deg, #EBEBEB, #CAD2C5);
   padding: 10px;
+  border: #2469275d solid 1px;
 }
 
 .main-content {
   flex: 1;
+  margin-top: 40px;
   padding: 20px;
   overflow-y: auto; 
   height: 100%; 
@@ -30,4 +36,34 @@
   width: 100%;
   margin-bottom: 10px;
   padding: 10px;
+}
+
+.topbar {
+  width: calc(100% - 263px);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 60px;
+  background: linear-gradient(135deg, #CAD2C5, #EBEBEB);
+  padding: 0 20px;
+  color: white;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1000;
+  border: #2469275d solid 1px;
+}
+
+.user-button {
+  color: white !important;
+  background-color: #2e7d32a9 !important;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px 10px !important;
+}
+
+.user-button:hover {
+  background-color: #246928 !important;
+  transition: 500ms;
 }

@@ -16,8 +16,9 @@ export const SidebarMenu = ({ setActiveComponent }) => {
 
     return (
         <div className="sidebar">
-            <button onClick={() => setActiveComponent("dataTable")}>Tabela Danych</button>
-            <button onClick={() => setActiveComponent("otherComponent")}>Inny Widok</button>
+            <button onClick={() => setActiveComponent("dataTable")}>Historia kontroli</button>
+            <button onClick={() => setActiveComponent("statsCharts")}>Wykresy statystyk</button>
+            <button onClick={() => setActiveComponent("controlMap")}>Mapa kontroli</button>
             <button onClick={logout}>Wyloguj się</button>
         </div>
     );

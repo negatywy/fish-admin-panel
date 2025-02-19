@@ -99,9 +99,7 @@ export const DataTable = () => {
 
     return (
         <div>
-            <h2>Lista Danych</h2>
-
-            {/* Dropdown for selecting date range */}
+            <h1>Historia kontroli</h1>
             <div className="filter-container">
                 <label>Filtruj według daty: </label>
                 <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
