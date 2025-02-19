@@ -4,6 +4,7 @@ import './style/App.css';
 import { Auth } from "./components/auth";
 import { ControlMap } from "./components/ControlMap";
 import { StatsCharts } from "./components/StatsCharts";
+import "leaflet/dist/leaflet.css";
 
 function App() {
   return (

@@ -67,3 +67,8 @@ body {
   background-color: #246928 !important;
   transition: 500ms;
 }
+
+.map-container {
+  height: calc(100% - 60px);
+  width: 100%;
+}
