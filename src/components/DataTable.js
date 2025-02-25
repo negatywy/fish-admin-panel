@@ -13,7 +13,7 @@ export const DataTable = () => {
         const fetchData = async () => {
             try {
                 console.log("Łączenie z Firestore...");
-                const querySnapshot = await getDocs(collection(db, "kontrole"));
+                const querySnapshot = await getDocs(collection(db, "ssr_controls"));
 
                 if (querySnapshot.empty) {
                     console.warn("Firestore zwrócił pustą kolekcję.");
