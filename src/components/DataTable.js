@@ -14,38 +14,32 @@ export const DataTable = () => {
             try {
                 console.log("Łączenie z Firestore...");
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
-
+    
                 if (querySnapshot.empty) {
                     console.warn("Firestore zwrócił pustą kolekcję.");
                 }
-
+    
                 const items = querySnapshot.docs.map(doc => {
                     const data = doc.data();
                     return {
                         id: doc.id,
-                        data: data.data?.toDate() ?? null,
-                        kod_grupy: data.kod_grupy ?? "Brak",
-                        kolo: data.kolo ?? "Brak",
-                        okreg: data.okreg ?? "Brak",
-                        powod_odrzucenia: data.powod_odrzucenia ?? "Brak",
-                        pozycja: data.pozycja ? `${data.pozycja.latitude}, ${data.pozycja.longitude}` : "Brak pozycji",
-                        straznik: data.straznik ?? "Brak",
-                        uwagi: data.uwagi ?? "Brak",
-                        wynik: data.wynik ?? "Brak",
-                        zezwolenie: data.zezwolenie ?? "Brak",
+                        control_date: data.control_date?.toDate() ?? null,
+                        association_club_name: data.association_club_name ?? "Brak"
                     };
                 });
 
-                console.log("Przetworzone dane:", items);
-                setData(items);
-                setFilteredData(items); // Initially, show all data
+                const sortedItems = items.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
+    
+                console.log("Przetworzone dane (posortowane):", sortedItems);
+                setData(sortedItems);
+                setFilteredData(sortedItems);
             } catch (error) {
                 console.error("Błąd pobierania danych:", error);
             }
         };
-
+    
         fetchData();
-    }, []);
+    }, []);    
 
     useEffect(() => {
         filterData();
@@ -68,7 +62,7 @@ export const DataTable = () => {
             cutoffDate.setMonth(now.getMonth() - 1);
         }
 
-        const filtered = data.filter(item => item.data && item.data >= cutoffDate);
+        const filtered = data.filter(item => item.control_date && item.control_date >= cutoffDate);
         setFilteredData(filtered);
     };
 
@@ -79,16 +73,8 @@ export const DataTable = () => {
         }
 
         const csvData = filteredData.map(item => ({
-            Data: item.data ? item.data.toLocaleString() : "Brak daty",
-            "Kod Grupy": item.kod_grupy,
-            Koło: item.kolo,
-            Okręg: item.okreg,
-            "Powód Odrzucenia": item.powod_odrzucenia,
-            Pozycja: item.pozycja,
-            Strażnik: item.straznik,
-            Uwagi: item.uwagi,
-            Wynik: item.wynik,
-            Zezwolenie: item.zezwolenie,
+            "Data kontroli": item.control_date ? item.control_date.toLocaleString() : "Brak daty",
+            "Association club name": item.association_club_name ? item.association_club_name : "Brak"
         }));
 
         const csv = Papa.unparse(csvData);
@@ -117,31 +103,15 @@ export const DataTable = () => {
                 <table>
                     <thead>
                         <tr>
-                            <th>Data</th>
-                            <th>Kod Grupy</th>
-                            <th>Koło</th>
-                            <th>Okręg</th>
-                            <th>Powód Odrzucenia</th>
-                            <th>Pozycja</th>
-                            <th>Strażnik</th>
-                            <th>Uwagi</th>
-                            <th>Wynik</th>
-                            <th>Zezwolenie</th>
+                            <th>Data kontroli</th>
+                            <th>Association club name</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredData.map(item => (
                             <tr key={item.id}>
-                                <td>{item.data ? item.data.toLocaleString() : "Brak daty"}</td>
-                                <td>{item.kod_grupy}</td>
-                                <td>{item.kolo}</td>
-                                <td>{item.okreg}</td>
-                                <td>{item.powod_odrzucenia}</td>
-                                <td>{item.pozycja}</td>
-                                <td>{item.straznik}</td>
-                                <td>{item.uwagi}</td>
-                                <td>{item.wynik}</td>
-                                <td>{item.zezwolenie}</td>
+                                <td>{item.control_date ? item.control_date.toLocaleString() : "Brak daty"}</td>
+                                <td>{item.association_club_name}</td>
                             </tr>
                         ))}
                     </tbody>
