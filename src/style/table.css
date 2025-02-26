@@ -3,10 +3,11 @@
     max-height: 400px;  
     overflow-x: auto;   
     overflow-y: auto;   
-  }
+}
 
 table {
-    min-width: 800px; 
+    width: 100%; /* Ensure table takes full container width */
+    table-layout: fixed; /* Makes all columns equal width */
     border-collapse: collapse;
     margin-top: 20px;
 }
@@ -16,6 +17,8 @@ th, td {
     padding: 8px;
     text-align: left;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Prevents content from overflowing */
 }
 
 th {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
@@ -24,10 +24,16 @@ export const DataTable = () => {
                     return {
                         id: doc.id,
                         control_date: data.control_date?.toDate() ?? null,
-                        association_club_name: data.association_club_name ?? "Brak"
+                        association_club_name: data.association_club_name ?? null,
+                        controller_name: data.controller_name ?? null,
+                        license_number: data.extractedLicenseNumber ?? null,
+                        latitude: data.position?.latitude ?? null,  
+                        longitude: data.position?.longitude ?? null,
+                        is_success: data.is_success ?? null,
+                        reason: data.rejection_reason ?? null 
                     };
                 });
-
+    
                 const sortedItems = items.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
     
                 console.log("Przetworzone dane (posortowane):", sortedItems);
@@ -39,7 +45,8 @@ export const DataTable = () => {
         };
     
         fetchData();
-    }, []);    
+    }, []);
+    
 
     useEffect(() => {
         filterData();
@@ -73,8 +80,14 @@ export const DataTable = () => {
         }
 
         const csvData = filteredData.map(item => ({
-            "Data kontroli": item.control_date ? item.control_date.toLocaleString() : "Brak daty",
-            "Association club name": item.association_club_name ? item.association_club_name : "Brak"
+            "Data kontroli": item.control_date ? item.control_date.toLocaleString() : "Brak",
+            "Strażnik": item.controller_name ? item.controller_name : "Brak",
+            "Zezwolenie": item.license_number ? item.license_number : "Brak",
+            "Koło": item.association_club_name ? item.association_club_name : "Brak",
+            "Szerokość geograficzna": item.latitude ? item.latitude : "Brak",
+            "Długość geograficzna": item.longitude ? item.longitude : "Brak",
+            "Wynik kontroli": item.is_success ? "OK" : "Odrzucona",
+            "Powód odrzucenia": item.reason ? item.reason : "Brak"
         }));
 
         const csv = Papa.unparse(csvData);
@@ -104,14 +117,26 @@ export const DataTable = () => {
                     <thead>
                         <tr>
                             <th>Data kontroli</th>
-                            <th>Association club name</th>
+                            <th>Strażnik</th>
+                            <th>Zezwolenie</th>
+                            <th>Koło</th>
+                            <th>Szerokość geograficzna</th>
+                            <th>Długość geograficzna</th>
+                            <th>Wynik kontroli</th>
+                            <th>Powód odrzucenia</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredData.map(item => (
                             <tr key={item.id}>
-                                <td>{item.control_date ? item.control_date.toLocaleString() : "Brak daty"}</td>
+                                <td>{item.control_date ? item.control_date.toLocaleString() : null}</td>
+                                <td>{item.controller_name}</td>
+                                <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
+                                <td>{item.latitude}</td>
+                                <td>{item.longitude}</td>
+                                <td>{item.is_success ? "OK" : "Odrzucona"}</td>
+                                <td>{item.reason}</td>
                             </tr>
                         ))}
                     </tbody>
