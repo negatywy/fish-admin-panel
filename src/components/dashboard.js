@@ -5,6 +5,7 @@ import { SidebarMenu } from "./SidebarMenu";
 import { DataTable } from "./DataTable";
 import { ControlMap } from "./ControlMap";
 import { StatsCharts } from "./StatsCharts";
+import { RangerStats } from "./RangerStats";
 import "../style/App.css";
 import "../style/table.css";
 import { Menu, MenuItem, Button } from "@mui/material";
@@ -49,6 +50,7 @@ export const Dashboard = () => {
                 {activeComponent === "dataTable" && <DataTable />}
                 {activeComponent === "controlMap" && <ControlMap />}
                 {activeComponent === "statsCharts" && <StatsCharts />}
+                {activeComponent === "rangerStats" && <RangerStats />}
             </div>
         </div>
     );

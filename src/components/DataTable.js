@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
@@ -54,13 +54,17 @@ export const DataTable = () => {
 
     const filterData = () => {
         if (dateFilter === "all") {
-            setFilteredData(data);
+            setFilteredData(data.filter(item => {
+                const itemDate = item.control_date ? new Date(item.control_date) : null;
+                const today = new Date();
+                return itemDate && itemDate.toDateString() !== today.toDateString();
+            }));
             return;
         }
-
+    
         const now = new Date();
         let cutoffDate;
-
+    
         if (dateFilter === "lastWeek") {
             cutoffDate = new Date();
             cutoffDate.setDate(now.getDate() - 7);
@@ -68,10 +72,15 @@ export const DataTable = () => {
             cutoffDate = new Date();
             cutoffDate.setMonth(now.getMonth() - 1);
         }
-
-        const filtered = data.filter(item => item.control_date && item.control_date >= cutoffDate);
+    
+        const filtered = data.filter(item => {
+            const itemDate = item.control_date ? new Date(item.control_date) : null;
+            return itemDate && itemDate >= cutoffDate && itemDate.toDateString() !== now.toDateString();
+        });
+    
         setFilteredData(filtered);
     };
+    
 
     const downloadCSV = () => {
         if (filteredData.length === 0) {

@@ -5,7 +5,7 @@
     justify-content: center;
     height: 100vh;
     background: linear-gradient(135deg, #EBEBEB, #CAD2C5);
-    color: white;
+    color: #2E7D32;
     font-family: 'Arial', sans-serif;
     text-align: center;
 }
@@ -24,8 +24,9 @@
     font-size: 2rem;
 }
 
-.auth-input {
-    width: 100%;
+.auth-input,
+.auth-button {
+    width: calc(100% - 20px);
     padding: 10px;
     margin: 10px 0;
     border: none;
@@ -36,14 +37,10 @@
 
 .auth-button {
     background-color: #2E7D32;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 1rem;
     cursor: pointer;
     transition: background 0.3s ease;
     color: white;
-    width: 100%;
+    font-weight: bold;
 }
 
 .auth-button:hover {

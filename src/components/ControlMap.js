@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "../style/App.css";
 import { db } from "../config/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -20,14 +20,14 @@ export const ControlMap = () => {
 
     useEffect(() => {
         const fetchPoints = async () => {
-            const querySnapshot = await getDocs(collection(db, "kontrole"));
+            const querySnapshot = await getDocs(collection(db, "ssr_controls"));
             const fetchedPoints = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 return {
                     id: doc.id,
-                    name: data.kolo, 
-                    lat: data.pozycja.latitude, 
-                    lng: data.pozycja.longitude 
+                    control_date: data.control_date?.toDate() ?? null, 
+                    lat: data.position?.latitude ?? null, 
+                    lng: data.position?.longitude ?? null
                 };
             });
             setPoints(fetchedPoints);
