@@ -4,6 +4,7 @@ import { db } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import "../style/App.css";
 
 export const DataTable = () => {
     const [data, setData] = useState([]);
@@ -11,6 +12,7 @@ export const DataTable = () => {
     const [dateFilter, setDateFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [modalContent, setModalContent] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -91,6 +93,14 @@ export const DataTable = () => {
         setFilteredData(filtered);
         setCurrentPage(1);
     };
+
+    const openModal = (content) => {
+        setModalContent(content);
+    };
+
+    const closeModal = () => {
+        setModalContent(null);
+    };
     
     const downloadCSV = () => {
         if (filteredData.length === 0) {
@@ -156,7 +166,13 @@ export const DataTable = () => {
                                 <td>{item.latitude}</td>
                                 <td>{item.longitude}</td>
                                 <td>{item.is_success ? "✅ OK" : "❌ Odrzucona"}</td>
-                                <td>{item.reason}</td>
+                                <td>
+                                    {item.reason ? (
+                                        <span className="clickable" onClick={() => openModal(item.reason)}>
+                                            🔍 Zobacz
+                                        </span>
+                                    ) : null}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -167,10 +183,19 @@ export const DataTable = () => {
                     <button className="pagination-btn" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><FaArrowRight /></button>
                 </div>
             </div>
+            {modalContent && (
+                <div className="modal-overlay" onClick={closeModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-btn" onClick={closeModal}>
+                            ×
+                        </button>
+                        <h2>Powód odrzucenia</h2>
+                        <p>{modalContent}</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-
-// powód odrzucenia - po kliknięciu, żeby pojawiał się pełny tekst
 // filtrowanie wg okręgu
