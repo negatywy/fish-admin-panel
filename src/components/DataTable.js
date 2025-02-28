@@ -3,11 +3,14 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 export const DataTable = () => {
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [dateFilter, setDateFilter] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -47,18 +50,25 @@ export const DataTable = () => {
         fetchData();
     }, []);
     
-
     useEffect(() => {
         filterData();
     }, [dateFilter, data]);
 
+    useEffect(() => {
+        const updateRowsPerPage = () => {
+            const tableHeight = window.innerHeight - 220;
+            const rowHeight = 40;
+            setRowsPerPage(Math.max(1, Math.floor(tableHeight / rowHeight)));
+        };
+        
+        updateRowsPerPage();
+        window.addEventListener("resize", updateRowsPerPage);
+        return () => window.removeEventListener("resize", updateRowsPerPage);
+    }, []);
+
     const filterData = () => {
         if (dateFilter === "all") {
-            setFilteredData(data.filter(item => {
-                const itemDate = item.control_date ? new Date(item.control_date) : null;
-                const today = new Date();
-                return itemDate && itemDate.toDateString() !== today.toDateString();
-            }));
+            setFilteredData(data);
             return;
         }
     
@@ -71,17 +81,17 @@ export const DataTable = () => {
         } else if (dateFilter === "lastMonth") {
             cutoffDate = new Date();
             cutoffDate.setMonth(now.getMonth() - 1);
-        }
+        } 
     
         const filtered = data.filter(item => {
             const itemDate = item.control_date ? new Date(item.control_date) : null;
-            return itemDate && itemDate >= cutoffDate && itemDate.toDateString() !== now.toDateString();
+            return itemDate && itemDate >= cutoffDate;
         });
     
         setFilteredData(filtered);
+        setCurrentPage(1);
     };
     
-
     const downloadCSV = () => {
         if (filteredData.length === 0) {
             alert("Brak danych do pobrania.");
@@ -105,6 +115,11 @@ export const DataTable = () => {
         saveAs(blob, `dane_${dateFilter}.csv`);
     };
 
+    const indexOfLastRow = currentPage * rowsPerPage;
+    const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+    const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+
     return (
         <div>
             <h1>Historia kontroli</h1>
@@ -115,12 +130,8 @@ export const DataTable = () => {
                     <option value="lastWeek">Ostatni tydzień</option>
                     <option value="lastMonth">Ostatni miesiąc</option>
                 </select>
-
-                {/* Download CSV Button */}
                 <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
             </div>
-
-            {/* Data Table */}
             <div className="table-container">
                 <table>
                     <thead>
@@ -136,21 +147,30 @@ export const DataTable = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredData.map(item => (
+                        {currentRows.map(item => (
                             <tr key={item.id}>
-                                <td>{item.control_date ? item.control_date.toLocaleString() : null}</td>
+                                <td>{item.control_date ? item.control_date.toLocaleString() : "Brak"}</td>
                                 <td>{item.controller_name}</td>
                                 <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
                                 <td>{item.latitude}</td>
                                 <td>{item.longitude}</td>
-                                <td>{item.is_success ? "OK" : "Odrzucona"}</td>
+                                <td>{item.is_success ? "✅ OK" : "❌ Odrzucona"}</td>
                                 <td>{item.reason}</td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                <div className="pagination" style={{ marginTop: "5px" }}>
+                    <button className="pagination-btn" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}><FaArrowLeft /></button>
+                    <span>Strona {currentPage} z {totalPages}</span>
+                    <button className="pagination-btn" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><FaArrowRight /></button>
+                </div>
             </div>
         </div>
     );
 };
+
+
+// powód odrzucenia - po kliknięciu, żeby pojawiał się pełny tekst
+// filtrowanie wg okręgu

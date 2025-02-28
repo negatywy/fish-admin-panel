@@ -6,6 +6,8 @@ import Papa from "papaparse";
 
 export const RangerStats = () => {
     const [stats, setStats] = useState([]);
+    const [filteredStats, setFilteredStats] = useState([]);
+    const [dateFilter, setDateFilter] = useState("all");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -23,32 +25,33 @@ export const RangerStats = () => {
                 querySnapshot.docs.forEach(doc => {
                     const data = doc.data();
                     const ranger = data.controller_name || "Nieznany";
-                    const position = data.position ? `${data.position.latitude}, ${data.position.longitude}` : "Brak danych";
                     const isSuccess = data.is_success ?? false;
+                    const controlDate = data.control_date?.toDate() ?? null;
 
                     if (!rangerData[ranger]) {
                         rangerData[ranger] = {
                             name: ranger,
                             totalControls: 0,
                             successfulControls: 0,
-                            locations: new Set()
+                            rejectedControls: 0,
+                            controlDates: []
                         };
                     }
 
                     rangerData[ranger].totalControls += 1;
                     if (isSuccess) {
                         rangerData[ranger].successfulControls += 1;
-                    } 
-                    rangerData[ranger].locations.add(position);
+                    } else {
+                        rangerData[ranger].rejectedControls += 1;
+                    }
+                    
+                    rangerData[ranger].controlDates.push(controlDate);
                 });
 
-                // Convert the object into an array
-                const formattedStats = Object.values(rangerData).map(ranger => ({
-                    ...ranger,
-                    locations: Array.from(ranger.locations).join(" | ") // Convert Set to string
-                }));
+                const formattedStats = Object.values(rangerData);
 
                 setStats(formattedStats);
+                setFilteredStats(formattedStats);
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
@@ -57,17 +60,45 @@ export const RangerStats = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        filterStats();
+    }, [dateFilter, stats]);
+
+    const filterStats = () => {
+        if (dateFilter === "all") {
+            setFilteredStats(stats);
+            return;
+        }
+
+        const now = new Date();
+        let cutoffDate;
+
+        if (dateFilter === "lastWeek") {
+            cutoffDate = new Date();
+            cutoffDate.setDate(now.getDate() - 7);
+        } else if (dateFilter === "lastMonth") {
+            cutoffDate = new Date();
+            cutoffDate.setMonth(now.getMonth() - 1);
+        }
+
+        const filtered = stats.filter(ranger => 
+            ranger.controlDates.some(date => date && date >= cutoffDate)
+        );
+        
+        setFilteredStats(filtered);
+    };
+
     const downloadCSV = () => {
-        if (stats.length === 0) {
+        if (filteredStats.length === 0) {
             alert("Brak danych do pobrania.");
             return;
         }
 
-        const csvData = stats.map(ranger => ({
+        const csvData = filteredStats.map(ranger => ({
             "Strażnik": ranger.name,
             "Liczba kontroli": ranger.totalControls,
             "Udane kontrole": ranger.successfulControls,
-            "Pozycje kontroli": ranger.locations
+            "Nieudane kontrole": ranger.rejectedControls
         }));
 
         const csv = Papa.unparse(csvData);
@@ -76,14 +107,21 @@ export const RangerStats = () => {
         saveAs(blob, `ranger_stats.csv`);
     };
 
+
     return (
         <div>
             <h1>Statystyki Strażników</h1>
             
-            {/* Download CSV Button */}
-            <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
+            <div className="filter-container" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <label>Filtruj według daty: </label>
+                <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
+                    <option value="all">Wszystkie</option>
+                    <option value="lastWeek">Ostatni tydzień</option>
+                    <option value="lastMonth">Ostatni miesiąc</option>
+                </select>
+                <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
+            </div>
 
-            {/* Data Table */}
             <div className="table-container">
                 <table>
                     <thead>
@@ -91,16 +129,16 @@ export const RangerStats = () => {
                             <th>Strażnik</th>
                             <th>Liczba kontroli</th>
                             <th>Udane kontrole</th>
-                            <th>Pozycje kontroli</th>
+                            <th>Nieudane kontrole</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {stats.map((ranger, index) => (
+                        {filteredStats.map((ranger, index) => (
                             <tr key={index}>
                                 <td>{ranger.name}</td>
                                 <td>{ranger.totalControls}</td>
                                 <td>{ranger.successfulControls}</td>
-                                <td>{ranger.locations}</td>
+                                <td>{ranger.rejectedControls}</td>
                             </tr>
                         ))}
                     </tbody>

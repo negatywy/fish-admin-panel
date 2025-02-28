@@ -51,7 +51,7 @@ export const ControlMap = () => {
     }, []);
 
     return (
-        <MapContainer center={[50.5382, 21.6541]} zoom={10} className="map-container">
+        <MapContainer center={[52.4461, 21.0302]} zoom={10} className="map-container">
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
@@ -60,7 +60,7 @@ export const ControlMap = () => {
                 <Marker 
                     key={point.id} 
                     position={[point.lat, point.lng]} 
-                    icon={point.is_success ? defaultIcon : redIcon} // Use red icon for unsuccessful controls
+                    icon={point.is_success ? defaultIcon : redIcon} 
                 >
                     <Popup>
                         <strong>{point.is_success ? "✅ Successful" : "❌ Rejected"}</strong><br />

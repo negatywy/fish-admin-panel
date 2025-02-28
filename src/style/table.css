@@ -1,15 +1,15 @@
 .table-container {
     width: 100%;
-    max-height: 400px;  
+    /* max-height: 400px;   */
     overflow-x: auto;   
     overflow-y: auto;   
 }
 
 table {
-    width: 100%; /* Ensure table takes full container width */
-    table-layout: fixed; /* Makes all columns equal width */
+    width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 th, td {
@@ -18,7 +18,7 @@ th, td {
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Prevents content from overflowing */
+    text-overflow: ellipsis;
 }
 
 th {
@@ -35,7 +35,7 @@ tr:hover {
 }
 
 .filter-container {
-    margin-bottom: 15px;
+    margin-bottom: 5px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -52,4 +52,21 @@ tr:hover {
 
 .download-btn:hover {
     background-color: #218838;
+}
+
+.pagination-btn {
+    border: none;
+    padding: 8px 10px 3px 10px;
+    margin: 0px 10px;
+    font-size: large;
+    border-radius: 10px;
+    background-color: transparent;
+    -webkit-transition: background-color 0.3s;
+    transition: 300ms;
+}
+
+.pagination-btn:hover {
+    background-color: #aaccac !important;
+    -webkit-transition: background-color 0.3s;
+    transition: 300ms;
 }

@@ -29,7 +29,7 @@ body {
   margin-top: 40px;
   padding: 20px;
   overflow-y: auto; 
-  height: 100%; 
+  height: calc(100% - 80px); 
 }
 .sidebar button {
   display: block;
@@ -69,6 +69,7 @@ body {
 }
 
 .map-container {
-  height: calc(100% - 60px);
+  height: 100%;
   width: 100%;
+  margin-top: 5px;
 }
