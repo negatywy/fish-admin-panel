@@ -13,6 +13,7 @@ export const DataTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [modalContent, setModalContent] = useState(null);
+    const [clubFilter, setClubFilter] = useState("all");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -54,7 +55,7 @@ export const DataTable = () => {
     
     useEffect(() => {
         filterData();
-    }, [dateFilter, data]);
+    }, [dateFilter, clubFilter, data]);
 
     useEffect(() => {
         const updateRowsPerPage = () => {
@@ -69,27 +70,31 @@ export const DataTable = () => {
     }, []);
 
     const filterData = () => {
-        if (dateFilter === "all") {
-            setFilteredData(data);
-            return;
+        let filtered = data;
+        let csvName;
+        
+        if (dateFilter !== "all") {
+            const now = new Date();
+            let cutoffDate;
+    
+            if (dateFilter === "lastWeek") {
+                cutoffDate = new Date();
+                cutoffDate.setDate(now.getDate() - 7);
+            } else if (dateFilter === "lastMonth") {
+                cutoffDate = new Date();
+                cutoffDate.setMonth(now.getMonth() - 1);
+            }
+    
+            filtered = filtered.filter(item => {
+                const itemDate = item.control_date ? new Date(item.control_date) : null;
+                return itemDate && itemDate >= cutoffDate;
+            });
         }
     
-        const now = new Date();
-        let cutoffDate;
-    
-        if (dateFilter === "lastWeek") {
-            cutoffDate = new Date();
-            cutoffDate.setDate(now.getDate() - 7);
-        } else if (dateFilter === "lastMonth") {
-            cutoffDate = new Date();
-            cutoffDate.setMonth(now.getMonth() - 1);
-        } 
-    
-        const filtered = data.filter(item => {
-            const itemDate = item.control_date ? new Date(item.control_date) : null;
-            return itemDate && itemDate >= cutoffDate;
-        });
-    
+        if (clubFilter !== "all") {
+            filtered = filtered.filter(item => item.association_club_name === clubFilter);
+        }
+        
         setFilteredData(filtered);
         setCurrentPage(1);
     };
@@ -109,20 +114,20 @@ export const DataTable = () => {
         }
 
         const csvData = filteredData.map(item => ({
-            "Data kontroli": item.control_date ? item.control_date.toLocaleString() : "Brak",
-            "Strażnik": item.controller_name ? item.controller_name : "Brak",
-            "Zezwolenie": item.license_number ? item.license_number : "Brak",
-            "Koło": item.association_club_name ? item.association_club_name : "Brak",
-            "Szerokość geograficzna": item.latitude ? item.latitude : "Brak",
-            "Długość geograficzna": item.longitude ? item.longitude : "Brak",
+            "Data kontroli": item.control_date ? item.control_date.toLocaleString() : null,
+            "Strażnik": item.controller_name ? item.controller_name : null,
+            "Zezwolenie": item.license_number ? item.license_number : null,
+            "Koło": item.association_club_name ? item.association_club_name : null,
+            "Szerokość geograficzna": item.latitude ? item.latitude : null,
+            "Długość geograficzna": item.longitude ? item.longitude : null,
             "Wynik kontroli": item.is_success ? "OK" : "Odrzucona",
-            "Powód odrzucenia": item.reason ? item.reason : "Brak"
+            "Powód odrzucenia": item.reason ? item.reason : null
         }));
 
         const csv = Papa.unparse(csvData);
         const utf8BOM = "\uFEFF" + csv;
         const blob = new Blob([utf8BOM], { type: "text/csv;charset=utf-8;" });
-        saveAs(blob, `dane_${dateFilter}.csv`);
+        saveAs(blob, `kontrole_${dateFilter}.csv`);
     };
 
     const indexOfLastRow = currentPage * rowsPerPage;
@@ -140,6 +145,15 @@ export const DataTable = () => {
                     <option value="lastWeek">Ostatni tydzień</option>
                     <option value="lastMonth">Ostatni miesiąc</option>
                 </select>
+
+                <label>Filtruj według Koła: </label>
+                <select value={clubFilter} onChange={(e) => setClubFilter(e.target.value)}>
+                    <option value="all">Wszystkie</option>
+                    {[...new Set(data.map(item => item.association_club_name))].map((club, index) => (
+                        <option key={index} value={club}>{club}</option>
+                    ))}
+                </select>
+
                 <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
             </div>
             <div className="table-container">
@@ -197,5 +211,3 @@ export const DataTable = () => {
         </div>
     );
 };
-
-// filtrowanie wg okręgu

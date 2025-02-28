@@ -104,7 +104,7 @@ export const RangerStats = () => {
         const csv = Papa.unparse(csvData);
         const utf8BOM = "\uFEFF" + csv;
         const blob = new Blob([utf8BOM], { type: "text/csv;charset=utf-8;" });
-        saveAs(blob, `ranger_stats.csv`);
+        saveAs(blob, `ranger_stats_${dateFilter}.csv`);
     };
 
 
