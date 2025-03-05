@@ -3,11 +3,15 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import "../style/App.css";
 
 export const RangerStats = () => {
     const [stats, setStats] = useState([]);
     const [filteredStats, setFilteredStats] = useState([]);
     const [dateFilter, setDateFilter] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -49,7 +53,6 @@ export const RangerStats = () => {
                 });
 
                 const formattedStats = Object.values(rangerData);
-
                 setStats(formattedStats);
                 setFilteredStats(formattedStats);
             } catch (error) {
@@ -64,9 +67,22 @@ export const RangerStats = () => {
         filterStats();
     }, [dateFilter, stats]);
 
+    useEffect(() => {
+        const updateRowsPerPage = () => {
+            const tableHeight = window.innerHeight - 220;
+            const rowHeight = 40;
+            setRowsPerPage(Math.max(1, Math.floor(tableHeight / rowHeight)));
+        };
+        
+        updateRowsPerPage();
+        window.addEventListener("resize", updateRowsPerPage);
+        return () => window.removeEventListener("resize", updateRowsPerPage);
+    }, []);
+
     const filterStats = () => {
         if (dateFilter === "all") {
             setFilteredStats(stats);
+            setCurrentPage(1);
             return;
         }
 
@@ -86,6 +102,7 @@ export const RangerStats = () => {
         );
         
         setFilteredStats(filtered);
+        setCurrentPage(1);
     };
 
     const downloadCSV = () => {
@@ -97,8 +114,8 @@ export const RangerStats = () => {
         const csvData = filteredStats.map(ranger => ({
             "Strażnik": ranger.name,
             "Liczba kontroli": ranger.totalControls,
-            "Udane kontrole": ranger.successfulControls,
-            "Nieudane kontrole": ranger.rejectedControls
+            "Kontrole pozytywne": ranger.successfulControls,
+            "Kontrole negatywne": ranger.rejectedControls
         }));
 
         const csv = Papa.unparse(csvData);
@@ -107,12 +124,15 @@ export const RangerStats = () => {
         saveAs(blob, `ranger_stats_${dateFilter}.csv`);
     };
 
+    const indexOfLastRow = currentPage * rowsPerPage;
+    const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+    const currentRows = filteredStats.slice(indexOfFirstRow, indexOfLastRow);
+    const totalPages = Math.ceil(filteredStats.length / rowsPerPage);
 
     return (
         <div>
             <h1>Statystyki Strażników</h1>
-            
-            <div className="filter-container" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div className="filter-container">
                 <label>Filtruj według daty: </label>
                 <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
                     <option value="all">Wszystkie</option>
@@ -121,19 +141,18 @@ export const RangerStats = () => {
                 </select>
                 <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
             </div>
-
             <div className="table-container">
                 <table>
                     <thead>
                         <tr>
                             <th>Strażnik</th>
                             <th>Liczba kontroli</th>
-                            <th>Udane kontrole</th>
-                            <th>Nieudane kontrole</th>
+                            <th>Kontrole pozytywne</th>
+                            <th>Kontrole negatywne</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredStats.map((ranger, index) => (
+                        {currentRows.map((ranger, index) => (
                             <tr key={index}>
                                 <td>{ranger.name}</td>
                                 <td>{ranger.totalControls}</td>
@@ -143,6 +162,11 @@ export const RangerStats = () => {
                         ))}
                     </tbody>
                 </table>
+                <div className="pagination" style={{ marginTop: "5px" }}>
+                    <button className="pagination-btn" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}><FaArrowLeft /></button>
+                    <span>Strona {currentPage} z {totalPages}</span>
+                    <button className="pagination-btn" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}><FaArrowRight /></button>
+                </div>
             </div>
         </div>
     );
