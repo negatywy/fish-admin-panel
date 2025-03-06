@@ -14,6 +14,7 @@ export const DataTable = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [modalContent, setModalContent] = useState(null);
     const [clubFilter, setClubFilter] = useState("all");
+    const [copySuccess, setCopySuccess] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -105,6 +106,16 @@ export const DataTable = () => {
 
     const closeModal = () => {
         setModalContent(null);
+    };
+
+        
+    const copyToClipboard = () => {
+        if (modalContent) {
+            navigator.clipboard.writeText(modalContent).then(() => {
+                setCopySuccess(true);
+                setTimeout(() => setCopySuccess(false), 2000);
+            });
+        }
     };
     
     const downloadCSV = () => {
@@ -198,16 +209,17 @@ export const DataTable = () => {
                 </div>
             </div>
             {modalContent && (
-                <div className="modal-overlay" onClick={closeModal}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <button className="close-btn" onClick={closeModal}>
-                            ×
-                        </button>
-                        <h2>Powód odrzucenia</h2>
-                        <p>{modalContent}</p>
+                    <div className="modal-overlay" onClick={closeModal}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                            <button className="close-btn" onClick={closeModal}>×</button>
+                            <h2>Powód odrzucenia</h2>
+                            <p>{modalContent}</p>
+                            <button className="copy-btn" onClick={copyToClipboard}>
+                                {copySuccess ? "✅ Skopiowano" : "Kopiuj"}
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
         </div>
     );
 };

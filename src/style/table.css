@@ -50,8 +50,9 @@ tr:hover {
     border-radius: 5px;
 }
 
-.download-btn:hover {
+.download-btn:hover, .copy-btn:hover {
     background-color: #218838;
+    color: white;
 }
 
 .pagination-btn {
@@ -61,6 +62,16 @@ tr:hover {
     font-size: large;
     border-radius: 10px;
     background-color: transparent;
+    -webkit-transition: background-color 0.3s;
+    transition: 300ms;
+}
+
+.copy-btn {
+    border: none;
+    padding: 5px 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    background-color: #aaccac;
     -webkit-transition: background-color 0.3s;
     transition: 300ms;
 }
