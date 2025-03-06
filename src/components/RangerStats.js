@@ -25,6 +25,8 @@ export const RangerStats = () => {
                 }
 
                 const rangerData = {};
+                let rangerCounter = 1;
+                const rangerMapping = {};
 
                 querySnapshot.docs.forEach(doc => {
                     const data = doc.data();
@@ -32,9 +34,15 @@ export const RangerStats = () => {
                     const isSuccess = data.is_success ?? false;
                     const controlDate = data.control_date?.toDate() ?? null;
 
-                    if (!rangerData[ranger]) {
-                        rangerData[ranger] = {
-                            name: ranger,
+                    if (!(ranger in rangerMapping)) {
+                        rangerMapping[ranger] = `Strażnik ${rangerCounter++}`;
+                    }
+
+                    const anonymizedName = rangerMapping[ranger];
+                    
+                    if (!rangerData[anonymizedName]) {
+                        rangerData[anonymizedName] = {
+                            name: anonymizedName,
                             totalControls: 0,
                             successfulControls: 0,
                             rejectedControls: 0,
@@ -42,14 +50,14 @@ export const RangerStats = () => {
                         };
                     }
 
-                    rangerData[ranger].totalControls += 1;
+                    rangerData[anonymizedName].totalControls += 1;
                     if (isSuccess) {
-                        rangerData[ranger].successfulControls += 1;
+                        rangerData[anonymizedName].successfulControls += 1;
                     } else {
-                        rangerData[ranger].rejectedControls += 1;
+                        rangerData[anonymizedName].rejectedControls += 1;
                     }
                     
-                    rangerData[ranger].controlDates.push(controlDate);
+                    rangerData[anonymizedName].controlDates.push(controlDate);
                 });
 
                 const formattedStats = Object.values(rangerData);

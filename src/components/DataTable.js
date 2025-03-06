@@ -26,13 +26,13 @@ export const DataTable = () => {
                     console.warn("Firestore zwrócił pustą kolekcję.");
                 }
     
-                const items = querySnapshot.docs.map(doc => {
+                const items = querySnapshot.docs.map((doc, index) => {
                     const data = doc.data();
                     return {
                         id: doc.id,
                         control_date: data.control_date?.toDate() ?? null,
                         association_club_name: data.association_club_name ?? null,
-                        controller_name: data.controller_name ?? null,
+                        controller_name: `Strażnik ${index + 1}`,
                         license_number: data.extractedLicenseNumber ?? null,
                         latitude: data.position?.latitude ?? null,  
                         longitude: data.position?.longitude ?? null,
@@ -72,7 +72,6 @@ export const DataTable = () => {
 
     const filterData = () => {
         let filtered = data;
-        let csvName;
         
         if (dateFilter !== "all") {
             const now = new Date();
@@ -124,9 +123,9 @@ export const DataTable = () => {
             return;
         }
 
-        const csvData = filteredData.map(item => ({
+        const csvData = filteredData.map((item, index) => ({
             "Data kontroli": item.control_date ? item.control_date.toLocaleString() : null,
-            "Strażnik": item.controller_name ? item.controller_name : null,
+            "Strażnik": `Strażnik ${index + 1}`,
             "Zezwolenie": item.license_number ? item.license_number : null,
             "Koło": item.association_club_name ? item.association_club_name : null,
             "Szerokość geograficzna": item.latitude ? item.latitude : null,
