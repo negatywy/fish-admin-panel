@@ -19,6 +19,7 @@ export const SidebarMenu = ({ setActiveComponent }) => {
             <button onClick={() => setActiveComponent("dataTable")}>Historia kontroli</button>
             <button onClick={() => setActiveComponent("statsCharts")}>Wykresy statystyk</button>
             <button onClick={() => setActiveComponent("controlMap")}>Mapa kontroli</button>
+            <button onClick={() => setActiveComponent("rangerStats")}>Statystyki strażników</button>
         </div>
     );
 };
