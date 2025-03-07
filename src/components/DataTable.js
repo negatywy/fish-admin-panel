@@ -25,14 +25,23 @@ export const DataTable = () => {
                 if (querySnapshot.empty) {
                     console.warn("Firestore zwrócił pustą kolekcję.");
                 }
-    
-                const items = querySnapshot.docs.map((doc, index) => {
+                const rangerMapping = {};
+                let rangerCounter = 1;
+
+                const items = querySnapshot.docs.map((doc) => {
                     const data = doc.data();
+                    const rangerName = data.controller_name ?? "Nieznany";
+
+                    // Assign an anonymized name if not already assigned
+                    if (!(rangerName in rangerMapping)) {
+                        rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
+                    }
+
                     return {
                         id: doc.id,
                         control_date: data.control_date?.toDate() ?? null,
                         association_club_name: data.association_club_name ?? null,
-                        controller_name: `Strażnik ${index + 1}`,
+                        controller_name: rangerMapping[rangerName],  // Anonymized name
                         license_number: data.extractedLicenseNumber ?? null,
                         latitude: data.position?.latitude ?? null,  
                         longitude: data.position?.longitude ?? null,
