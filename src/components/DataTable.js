@@ -14,6 +14,7 @@ export const DataTable = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [modalContent, setModalContent] = useState(null);
     const [clubFilter, setClubFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all"); 
     const [copySuccess, setCopySuccess] = useState(false);
 
     useEffect(() => {
@@ -65,7 +66,7 @@ export const DataTable = () => {
     
     useEffect(() => {
         filterData();
-    }, [dateFilter, clubFilter, data]);
+    }, [dateFilter, clubFilter, statusFilter, data]);
 
     useEffect(() => {
         const updateRowsPerPage = () => {
@@ -104,6 +105,10 @@ export const DataTable = () => {
             filtered = filtered.filter(item => item.association_club_name === clubFilter);
         }
         
+        if (statusFilter === "rejected") {
+            filtered = filtered.filter(item => !item.is_success);
+        }
+
         setFilteredData(filtered);
         setCurrentPage(1);
     };
@@ -139,8 +144,8 @@ export const DataTable = () => {
             "Koło": item.association_club_name ? item.association_club_name : null,
             "Szerokość geograficzna": item.latitude ? item.latitude : null,
             "Długość geograficzna": item.longitude ? item.longitude : null,
-            "Wynik kontroli": item.is_success ? "OK" : "Odrzucona",
-            "Powód odrzucenia": item.reason ? item.reason : null
+            "Wynik kontroli": item.is_success ? "OK" : "Wykroczenia",
+            "Szczegóły kontroli": item.reason ? item.reason : null
         }));
 
         const csv = Papa.unparse(csvData);
@@ -158,19 +163,25 @@ export const DataTable = () => {
         <div>
             <h1>Historia kontroli</h1>
             <div className="filter-container">
-                <label>Filtruj według daty: </label>
+                <label>Według daty: </label>
                 <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
                     <option value="all">Wszystkie</option>
                     <option value="lastWeek">Ostatni tydzień</option>
                     <option value="lastMonth">Ostatni miesiąc</option>
                 </select>
 
-                <label>Filtruj według Koła: </label>
+                <label>Według koła: </label>
                 <select value={clubFilter} onChange={(e) => setClubFilter(e.target.value)}>
                     <option value="all">Wszystkie</option>
                     {[...new Set(data.map(item => item.association_club_name))].map((club, index) => (
                         <option key={index} value={club}>{club}</option>
                     ))}
+                </select>
+
+                <label>Według statusu: </label>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="all">Wszystkie</option>
+                    <option value="rejected">Tylko odrzucone</option>
                 </select>
 
                 <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
@@ -186,7 +197,7 @@ export const DataTable = () => {
                             <th>Szerokość geograficzna</th>
                             <th>Długość geograficzna</th>
                             <th>Wynik kontroli</th>
-                            <th>Powód odrzucenia</th>
+                            <th>Szczegóły kontroli</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -198,7 +209,7 @@ export const DataTable = () => {
                                 <td>{item.association_club_name}</td>
                                 <td>{item.latitude}</td>
                                 <td>{item.longitude}</td>
-                                <td>{item.is_success ? "✅ OK" : "❌ Odrzucona"}</td>
+                                <td>{item.is_success ? "✅ OK" : "❌ Wykroczenia"}</td>
                                 <td>
                                     {item.reason ? (
                                         <span className="clickable" onClick={() => openModal(item.reason)}>
@@ -220,7 +231,7 @@ export const DataTable = () => {
                     <div className="modal-overlay" onClick={closeModal}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                             <button className="close-btn" onClick={closeModal}>×</button>
-                            <h2>Powód odrzucenia</h2>
+                            <h2>Szczegóły kontroli</h2>
                             <p>{modalContent}</p>
                             <button className="copy-btn" onClick={copyToClipboard}>
                                 {copySuccess ? "✅ Skopiowano" : "Kopiuj"}
