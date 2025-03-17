@@ -79,7 +79,17 @@ export const ControlMap = () => {
 
     return (
         <div>
-            <Filters data={points} style={{margin: "10px 0"}} showDownloadButton={false} />
+            <Filters 
+                dateFilter={dateFilter} 
+                setDateFilter={setDateFilter} 
+                clubFilter={clubFilter} 
+                setClubFilter={setClubFilter} 
+                statusFilter={statusFilter} 
+                setStatusFilter={setStatusFilter} 
+                data={points} 
+                style={{margin: "10px 0"}}
+                showDownloadButton={false}
+            />
             <MapContainer 
                 center={[52.4461, 21.0302]} 
                 zoom={10} 

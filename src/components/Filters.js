@@ -1,8 +1,12 @@
-import { useFilters } from "../context/FiltersContext";
-
-const Filters = ({ data, style, downloadCSV, showDownloadButton = true }) => {
-    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
-
+const Filters = ({ 
+    dateFilter, setDateFilter, 
+    clubFilter, setClubFilter, 
+    statusFilter, setStatusFilter, 
+    data, 
+    style,
+    downloadCSV, 
+    showDownloadButton = true
+}) => {
     return (
         <div className="filter-container" style={style}>
             <label>Według daty: </label>

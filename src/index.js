@@ -4,14 +4,11 @@ import './style/index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import "leaflet/dist/leaflet.css";
-import { FiltersProvider } from "./context/FiltersContext";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <FiltersProvider>
-      <App />
-    </FiltersProvider>
+    <App />
   </React.StrictMode>
 );
 

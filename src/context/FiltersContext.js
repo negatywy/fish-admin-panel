@@ -1,21 +1,21 @@
-import { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState } from 'react';
 
-const FiltersContext = createContext();
+const FilterContext = createContext();
 
-export const FiltersProvider = ({ children }) => {
-    const [dateFilter, setDateFilter] = useState("all");
-    const [clubFilter, setClubFilter] = useState("all");
-    const [statusFilter, setStatusFilter] = useState("all");
-
-    return (
-        <FiltersContext.Provider value={{ 
-            dateFilter, setDateFilter, 
-            clubFilter, setClubFilter, 
-            statusFilter, setStatusFilter 
-        }}>
-            {children}
-        </FiltersContext.Provider>
-    );
+export const useFilterContext = () => {
+    return useContext(FilterContext);
 };
 
-export const useFilters = () => useContext(FiltersContext);
+export const FilterProvider = ({ children }) => {
+    const [filteredData, setFilteredData] = useState([]);
+
+    const updateFilteredData = (data) => {
+        setFilteredData(data);
+    };
+
+    return (
+        <FilterContext.Provider value={{ filteredData, updateFilteredData }}>
+            {children}
+        </FilterContext.Provider>
+    );
+};

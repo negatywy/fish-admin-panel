@@ -7,7 +7,7 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import "../style/App.css";
 import Filters from "./Filters";
 
-export const DataTable = ({ data, downloadCSV }) => {
+export const DataTable = () => {
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [dateFilter, setDateFilter] = useState("all");
@@ -163,7 +163,17 @@ export const DataTable = ({ data, downloadCSV }) => {
     return (
         <div>
             <h1>Historia kontroli</h1>
-            <Filters data={data} downloadCSV={downloadCSV} showDownloadButton={true} />
+            <Filters
+                dateFilter={dateFilter}
+                setDateFilter={setDateFilter}
+                clubFilter={clubFilter}
+                setClubFilter={setClubFilter}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                data={data}
+                downloadCSV={downloadCSV}
+                showDownloadButton={true} 
+            />
             <div className="table-container">
                 <table>
                     <thead>
