@@ -7,7 +7,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import Filters from "./Filters";
+import { Filters } from "./Filters";
+import { useFilters } from "../context/FilterContext";
 
 const defaultIcon = L.icon({
     iconUrl: markerIcon,
@@ -20,11 +21,9 @@ const redIcon = L.icon({
 });
 
 export const ControlMap = () => {
+    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
     const [points, setPoints] = useState([]);
     const [filteredPoints, setFilteredPoints] = useState([]);
-    const [dateFilter, setDateFilter] = useState("all");
-    const [clubFilter, setClubFilter] = useState("all");
-    const [statusFilter, setStatusFilter] = useState("all");
 
     useEffect(() => {
         const fetchPoints = async () => {

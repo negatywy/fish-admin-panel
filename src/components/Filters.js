@@ -1,12 +1,9 @@
-const Filters = ({ 
-    dateFilter, setDateFilter, 
-    clubFilter, setClubFilter, 
-    statusFilter, setStatusFilter, 
-    data, 
-    style,
-    downloadCSV, 
-    showDownloadButton = true
-}) => {
+import React from 'react';
+import { useFilters } from '../context/FilterContext';
+
+export const Filters = ({ data, style, downloadCSV, showDownloadButton = true }) => {
+    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
+
     return (
         <div className="filter-container" style={style}>
             <label>Według daty: </label>
@@ -36,5 +33,3 @@ const Filters = ({
         </div>
     );
 };
-
-export default Filters;

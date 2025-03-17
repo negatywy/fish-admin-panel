@@ -5,17 +5,16 @@ import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import "../style/App.css";
-import Filters from "./Filters";
+import { useFilters } from "../context/FilterContext";
+import { Filters } from "./Filters";
 
 export const DataTable = () => {
+    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
-    const [dateFilter, setDateFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [modalContent, setModalContent] = useState(null);
-    const [clubFilter, setClubFilter] = useState("all");
-    const [statusFilter, setStatusFilter] = useState("all"); 
     const [copySuccess, setCopySuccess] = useState(false);
 
     useEffect(() => {
