@@ -5,8 +5,9 @@ import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import "../style/App.css";
+import Filters from "./Filters";
 
-export const DataTable = () => {
+export const DataTable = ({ data, downloadCSV }) => {
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [dateFilter, setDateFilter] = useState("all");
@@ -162,30 +163,7 @@ export const DataTable = () => {
     return (
         <div>
             <h1>Historia kontroli</h1>
-            <div className="filter-container">
-                <label>Według daty: </label>
-                <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
-                    <option value="all">Wszystkie</option>
-                    <option value="lastWeek">Ostatni tydzień</option>
-                    <option value="lastMonth">Ostatni miesiąc</option>
-                </select>
-
-                <label>Według koła: </label>
-                <select value={clubFilter} onChange={(e) => setClubFilter(e.target.value)}>
-                    <option value="all">Wszystkie</option>
-                    {[...new Set(data.map(item => item.association_club_name))].map((club, index) => (
-                        <option key={index} value={club}>{club}</option>
-                    ))}
-                </select>
-
-                <label>Według statusu: </label>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="all">Wszystkie</option>
-                    <option value="rejected">Tylko odrzucone</option>
-                </select>
-
-                <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
-            </div>
+            <Filters data={data} downloadCSV={downloadCSV} showDownloadButton={true} />
             <div className="table-container">
                 <table>
                     <thead>
