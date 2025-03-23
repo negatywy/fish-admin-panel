@@ -9,6 +9,12 @@ export const FilterProvider = ({ children }) => {
   const [clubFilter, setClubFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const resetFilters = () => {
+    setDateFilter("all");
+    setClubFilter("all");
+    setStatusFilter("all");
+  };
+
   const value = {
     dateFilter,
     setDateFilter,
@@ -16,6 +22,7 @@ export const FilterProvider = ({ children }) => {
     setClubFilter,
     statusFilter,
     setStatusFilter,
+    resetFilters,
   };
 
   return (

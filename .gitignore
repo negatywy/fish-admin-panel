@@ -2,6 +2,18 @@
 
 .env
 
+# Firebase cache directory
+.firebase/
+
+# Firebase authentication and project-specific settings (optional)
+.firebaserc
+
+# Firebase Hosting & Firestore rules (optional, if you don’t want to share config)
+firebase.json
+firestore.rules
+firestore.indexes.json
+
+
 # dependencies
 /node_modules
 /.pnp

@@ -6,6 +6,7 @@ import { DataTable } from "./DataTable";
 import { ControlMap } from "./ControlMap";
 import { StatsCharts } from "./StatsCharts";
 import { RangerStats } from "./RangerStats";
+import { useFilters } from "../context/FilterContext";
 import "../style/App.css";
 import "../style/table.css";
 import { Menu, MenuItem, Button } from "@mui/material";
@@ -15,6 +16,7 @@ export const Dashboard = () => {
     const [activeComponent, setActiveComponent] = useState("dataTable");
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
+    const { resetFilters } = useFilters(); 
 
     useEffect(() => {
         if (!auth.currentUser) {
@@ -31,6 +33,7 @@ export const Dashboard = () => {
     };
 
     const handleLogout = () => {
+        resetFilters(); 
         auth.signOut().then(() => navigate("/"));
     };
 
