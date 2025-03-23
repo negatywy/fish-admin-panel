@@ -28,7 +28,7 @@ export const Filters = ({ data, style, downloadCSV, showDownloadButton = true })
             </select>
 
             {showDownloadButton && (
-                <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
+                <button onClick={downloadCSV} className="default-btn">Pobierz CSV</button>
             )}
         </div>
     );

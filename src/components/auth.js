@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import logo from "../assets/the-fish-green.png";
 import "../style/auth.css"; 
 
 export const Auth = () => {
@@ -23,22 +24,25 @@ export const Auth = () => {
 
     return (
         <div className="auth-container">
-            <div className="auth-box">
-                <h1>Zaloguj się</h1>
-                <input 
-                    className="auth-input"
-                    placeholder="Email..." 
-                    type="email"
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-                <input 
-                    className="auth-input"
-                    placeholder="Hasło..."
-                    type="password"
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                {error && <p className="error-message">{error}</p>}
-                <button className="auth-button" onClick={login}>Zaloguj się</button>
+            <div className="auth-content">
+                <img src={logo} alt="Logo" className="auth-logo" />
+                <div className="auth-box">
+                    <h1>Zaloguj się</h1>
+                    <input 
+                        className="auth-input"
+                        placeholder="Email..." 
+                        type="email"
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <input 
+                        className="auth-input"
+                        placeholder="Hasło..."
+                        type="password"
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {error && <p className="error-message">{error}</p>}
+                    <button className="auth-button" onClick={login}>Zaloguj się</button>
+                </div>
             </div>
         </div>
     );

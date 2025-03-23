@@ -147,7 +147,7 @@ export const RangerStats = () => {
                     <option value="lastWeek">Ostatni tydzień</option>
                     <option value="lastMonth">Ostatni miesiąc</option>
                 </select>
-                <button onClick={downloadCSV} className="download-btn">Pobierz CSV</button>
+                <button onClick={downloadCSV} className="default-btn">Pobierz CSV</button>
             </div>
             <div className="table-container">
                 <table>
