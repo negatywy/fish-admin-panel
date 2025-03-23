@@ -39,11 +39,9 @@ export const ControlMap = () => {
                         is_success: data.is_success ?? false,
                         association_club_name: data.association_club_name ?? ""
                     };
-                });
+                }).filter(point => point.lat !== null && point.lng !== null);
 
-                const validPoints = fetchedPoints.filter(point => point.lat !== null && point.lng !== null);
-
-                setPoints(validPoints);
+                setPoints(fetchedPoints);
             } catch (error) {
                 console.error("Error fetching map data:", error);
             }
@@ -53,16 +51,21 @@ export const ControlMap = () => {
     }, []);
 
     useEffect(() => {
-        let filtered = [...points];
+        const now = new Date();
+        const currentYear = now.getFullYear();
+
+        let filtered = points.filter(point => 
+            point.control_date && point.control_date.getFullYear() === currentYear
+        );
 
         if (dateFilter !== "all") {
-            const now = new Date();
-            filtered = filtered.filter(point => {
-                if (!point.control_date) return false;
-                const diffTime = now - point.control_date;
-                const diffDays = diffTime / (1000 * 60 * 60 * 24);
-                return dateFilter === "lastWeek" ? diffDays <= 7 : diffDays <= 30;
-            });
+            let cutoffDate = new Date();
+            if (dateFilter === "lastWeek") {
+                cutoffDate.setDate(now.getDate() - 7);
+            } else if (dateFilter === "lastMonth") {
+                cutoffDate.setMonth(now.getMonth() - 1);
+            }
+            filtered = filtered.filter(point => point.control_date >= cutoffDate);
         }
 
         if (clubFilter !== "all") {
@@ -86,7 +89,7 @@ export const ControlMap = () => {
                 statusFilter={statusFilter} 
                 setStatusFilter={setStatusFilter} 
                 data={points} 
-                style={{margin: "10px 0"}}
+                style={{ margin: "10px 0" }}
                 showDownloadButton={false}
             />
             <MapContainer 

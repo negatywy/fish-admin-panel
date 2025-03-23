@@ -82,6 +82,14 @@ export const DataTable = () => {
 
     const filterData = () => {
         let filtered = data;
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+
+        filtered = filtered.filter(item => {
+            const itemDate = item.control_date ? new Date(item.control_date) : null;
+            return itemDate && itemDate.getFullYear() === currentYear;
+        });
         
         if (dateFilter !== "all") {
             const now = new Date();

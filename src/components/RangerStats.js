@@ -16,14 +16,11 @@ export const RangerStats = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                console.log("Fetching data from Firestore...");
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
+                if (querySnapshot.empty) return;
 
-                if (querySnapshot.empty) {
-                    console.warn("Firestore returned an empty collection.");
-                    return;
-                }
-
+                const now = new Date();
+                const currentYear = now.getFullYear();
                 const rangerData = {};
                 let rangerCounter = 1;
                 const rangerMapping = {};
@@ -34,12 +31,14 @@ export const RangerStats = () => {
                     const isSuccess = data.is_success ?? false;
                     const controlDate = data.control_date?.toDate() ?? null;
 
+                    if (!controlDate || controlDate.getFullYear() !== currentYear) return; // Pomijamy dane spoza bieżącego roku
+
                     if (!(ranger in rangerMapping)) {
                         rangerMapping[ranger] = `Strażnik ${rangerCounter++}`;
                     }
 
                     const anonymizedName = rangerMapping[ranger];
-                    
+
                     if (!rangerData[anonymizedName]) {
                         rangerData[anonymizedName] = {
                             name: anonymizedName,
@@ -72,6 +71,30 @@ export const RangerStats = () => {
     }, []);
 
     useEffect(() => {
+        const filterStats = () => {
+            if (dateFilter === "all") {
+                setFilteredStats(stats);
+                setCurrentPage(1);
+                return;
+            }
+
+            const now = new Date();
+            let cutoffDate = new Date();
+
+            if (dateFilter === "lastWeek") {
+                cutoffDate.setDate(now.getDate() - 7);
+            } else if (dateFilter === "lastMonth") {
+                cutoffDate.setMonth(now.getMonth() - 1);
+            }
+
+            const filtered = stats.filter(ranger => 
+                ranger.controlDates.some(date => date >= cutoffDate)
+            );
+
+            setFilteredStats(filtered);
+            setCurrentPage(1);
+        };
+
         filterStats();
     }, [dateFilter, stats]);
 
@@ -86,32 +109,6 @@ export const RangerStats = () => {
         window.addEventListener("resize", updateRowsPerPage);
         return () => window.removeEventListener("resize", updateRowsPerPage);
     }, []);
-
-    const filterStats = () => {
-        if (dateFilter === "all") {
-            setFilteredStats(stats);
-            setCurrentPage(1);
-            return;
-        }
-
-        const now = new Date();
-        let cutoffDate;
-
-        if (dateFilter === "lastWeek") {
-            cutoffDate = new Date();
-            cutoffDate.setDate(now.getDate() - 7);
-        } else if (dateFilter === "lastMonth") {
-            cutoffDate = new Date();
-            cutoffDate.setMonth(now.getMonth() - 1);
-        }
-
-        const filtered = stats.filter(ranger => 
-            ranger.controlDates.some(date => date && date >= cutoffDate)
-        );
-        
-        setFilteredStats(filtered);
-        setCurrentPage(1);
-    };
 
     const downloadCSV = () => {
         if (filteredStats.length === 0) {
