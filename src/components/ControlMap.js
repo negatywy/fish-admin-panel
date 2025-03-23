@@ -29,15 +29,28 @@ export const ControlMap = () => {
         const fetchPoints = async () => {
             try {
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
+
+                const rangerMapping = {};
+                let rangerCounter = 1;
+
                 const fetchedPoints = querySnapshot.docs.map(doc => {
                     const data = doc.data();
+                    const rangerName = data.controller_name ?? "Nieznany";
+
+                    // Assign an anonymized name if not already assigned
+                    if (!(rangerName in rangerMapping)) {
+                        rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
+                    }
+
                     return {
                         id: doc.id,
                         control_date: data.control_date?.toDate() ?? null,
+                        controller_name: rangerMapping[rangerName],  // Anonymized name
                         lat: data.position?.latitude ?? null,
                         lng: data.position?.longitude ?? null,
                         is_success: data.is_success ?? false,
-                        association_club_name: data.association_club_name ?? ""
+                        association_club_name: data.association_club_name ?? "",
+                        license_number: data.extractedLicenseNumber ?? null
                     };
                 }).filter(point => point.lat !== null && point.lng !== null);
 
@@ -110,7 +123,9 @@ export const ControlMap = () => {
                     >
                         <Popup>
                             <strong>{point.is_success ? "✅ OK" : "❌ Wykroczenia"}</strong><br />
-                            {point.control_date ? point.control_date.toLocaleString() : "No control date"}
+                            {point.control_date ? point.control_date.toLocaleString() : "No control date"}<br />
+                            <strong>Zezwolenie: </strong>{point.license_number ? `${point.license_number}` : "Brak"}<br />
+                            <strong>Strażnik: </strong>{point.controller_name ? `${point.controller_name}` : "Brak"}
                         </Popup>
                     </Marker>
                 ))}
