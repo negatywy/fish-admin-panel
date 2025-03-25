@@ -7,6 +7,7 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import "../style/App.css";
 import { useFilters } from "../context/FilterContext";
 import { Filters } from "./Filters";
+import { auth } from "../config/firebase";
 
 export const DataTable = () => {
     const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
@@ -26,6 +27,21 @@ export const DataTable = () => {
                 if (querySnapshot.empty) {
                     console.warn("Firestore zwrócił pustą kolekcję.");
                 }
+
+                const user = auth.currentUser;
+                let regionName ="all";
+                switch (user.email) {
+                    case "admin.ompzw@naturai.pl":
+                        regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
+                        break;
+                    case "admin.tbga@naturai.pl":
+                        regionName = "Okręg PZW w Tarnobrzegu";
+                        break;
+                    default:
+                        regionName = "all";
+                        break;
+                }
+
                 const rangerMapping = {};
                 let rangerCounter = 1;
 
@@ -42,6 +58,7 @@ export const DataTable = () => {
                         id: doc.id,
                         control_date: data.control_date?.toDate() ?? null,
                         association_club_name: data.association_club_name ?? null,
+                        association_name: data.association_name ?? null,
                         controller_name: rangerMapping[rangerName],  // Anonymized name
                         license_number: data.extractedLicenseNumber ?? null,
                         latitude: data.position?.latitude ?? null,  
@@ -49,7 +66,8 @@ export const DataTable = () => {
                         is_success: data.is_success ?? null,
                         reason: data.rejection_reason ?? null 
                     };
-                });
+                })
+                .filter(item => item.association_name === regionName)
     
                 const sortedItems = items.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
     

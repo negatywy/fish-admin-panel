@@ -5,6 +5,7 @@ import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import "../style/App.css";
+import { auth } from "../config/firebase";
 
 export const RangerStats = () => {
     const [stats, setStats] = useState([]);
@@ -19,6 +20,20 @@ export const RangerStats = () => {
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
                 if (querySnapshot.empty) return;
 
+                const user = auth.currentUser;
+                let regionName ="all";
+                switch (user.email) {
+                    case "admin.ompzw@naturai.pl":
+                        regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
+                        break;
+                    case "admin.tbga@naturai.pl":
+                        regionName = "Okręg PZW w Tarnobrzegu";
+                        break;
+                    default:
+                        regionName = "all";
+                        break;
+                }
+
                 const now = new Date();
                 const currentYear = now.getFullYear();
                 const rangerData = {};
@@ -31,7 +46,8 @@ export const RangerStats = () => {
                     const isSuccess = data.is_success ?? false;
                     const controlDate = data.control_date?.toDate() ?? null;
 
-                    if (!controlDate || controlDate.getFullYear() !== currentYear) return; // Pomijamy dane spoza bieżącego roku
+                    if (!controlDate || controlDate.getFullYear() !== currentYear) return; 
+                    if (regionName !== "all" && data.association_name !== regionName) return;
 
                     if (!(ranger in rangerMapping)) {
                         rangerMapping[ranger] = `Strażnik ${rangerCounter++}`;

@@ -9,6 +9,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { Filters } from "./Filters";
 import { useFilters } from "../context/FilterContext";
+import { auth } from "../config/firebase";
 
 const defaultIcon = L.icon({
     iconUrl: markerIcon,
@@ -30,6 +31,20 @@ export const ControlMap = () => {
             try {
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
 
+                const user = auth.currentUser;
+                let regionName ="all";
+                switch (user.email) {
+                    case "admin.ompzw@naturai.pl":
+                        regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
+                        break;
+                    case "admin.tbga@naturai.pl":
+                        regionName = "Okręg PZW w Tarnobrzegu";
+                        break;
+                    default:
+                        regionName = "all";
+                        break;
+                }
+
                 const rangerMapping = {};
                 let rangerCounter = 1;
 
@@ -45,6 +60,7 @@ export const ControlMap = () => {
                     return {
                         id: doc.id,
                         control_date: data.control_date?.toDate() ?? null,
+                        association_name: data.association_name ?? null,
                         controller_name: rangerMapping[rangerName],  // Anonymized name
                         lat: data.position?.latitude ?? null,
                         lng: data.position?.longitude ?? null,
@@ -52,7 +68,7 @@ export const ControlMap = () => {
                         association_club_name: data.association_club_name ?? "",
                         license_number: data.extractedLicenseNumber ?? null
                     };
-                }).filter(point => point.lat !== null && point.lng !== null);
+                }).filter(point => point.lat !== null && point.lng !== null && point.association_name === regionName);
 
                 setPoints(fetchedPoints);
             } catch (error) {
