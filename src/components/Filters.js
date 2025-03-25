@@ -24,7 +24,7 @@ export const Filters = ({ data, style, downloadCSV, showDownloadButton = true })
             <label>Według statusu: </label>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="all">Wszystkie</option>
-                <option value="rejected">Tylko odrzucone</option>
+                <option value="rejected">Tylko wykroczenia</option>
             </select>
 
             {showDownloadButton && (
