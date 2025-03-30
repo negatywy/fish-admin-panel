@@ -53,11 +53,12 @@ export const RangerStats = () => {
                         rangerMapping[ranger] = `Strażnik ${rangerCounter++}`;
                     }
 
-                    const anonymizedName = rangerMapping[ranger];
+                    // const anonymizedName = rangerMapping[ranger];
+                    // const anonymizedName = ranger; // do anonimizacji
 
-                    if (!rangerData[anonymizedName]) {
-                        rangerData[anonymizedName] = {
-                            name: anonymizedName,
+                    if (!rangerData[ranger]) {
+                        rangerData[ranger] = {
+                            name: ranger,
                             totalControls: 0,
                             successfulControls: 0,
                             rejectedControls: 0,
@@ -65,14 +66,14 @@ export const RangerStats = () => {
                         };
                     }
 
-                    rangerData[anonymizedName].totalControls += 1;
+                    rangerData[ranger].totalControls += 1;
                     if (isSuccess) {
-                        rangerData[anonymizedName].successfulControls += 1;
+                        rangerData[ranger].successfulControls += 1;
                     } else {
-                        rangerData[anonymizedName].rejectedControls += 1;
+                        rangerData[ranger].rejectedControls += 1;
                     }
                     
-                    rangerData[anonymizedName].controlDates.push(controlDate);
+                    rangerData[ranger].controlDates.push(controlDate);
                 });
 
                 const formattedStats = Object.values(rangerData);

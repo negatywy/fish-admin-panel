@@ -42,24 +42,25 @@ export const DataTable = () => {
                         break;
                 }
 
-                const rangerMapping = {};
-                let rangerCounter = 1;
+                // do anonimizacji
+                // const rangerMapping = {};
+                // let rangerCounter = 1;
 
                 const items = querySnapshot.docs.map((doc) => {
                     const data = doc.data();
                     const rangerName = data.controller_name ?? "Nieznany";
 
-                    // Assign an anonymized name if not already assigned
-                    if (!(rangerName in rangerMapping)) {
-                        rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
-                    }
+                    // do anonimizacji
+                    // if (!(rangerName in rangerMapping)) {
+                    //     rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
+                    // }
 
                     return {
                         id: doc.id,
                         control_date: data.control_date?.toDate() ?? null,
                         association_club_name: data.association_club_name ?? null,
                         association_name: data.association_name ?? null,
-                        controller_name: rangerMapping[rangerName],  // Anonymized name
+                        controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
                         license_number: data.extractedLicenseNumber ?? null,
                         latitude: data.position?.latitude ?? null,  
                         longitude: data.position?.longitude ?? null,
