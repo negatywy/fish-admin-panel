@@ -1,7 +1,7 @@
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
-import logo from "../assets/the-fish-green.png";
+import logo from "../assets/ranger_logo.jpg";
 
 export const SidebarMenu = ({ setActiveComponent }) => {
     const navigate = useNavigate();

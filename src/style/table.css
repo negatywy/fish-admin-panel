@@ -42,7 +42,7 @@ tr:hover {
 }
 
 .default-btn {
-    background-color: #28a745;
+    background-color: #249b3e;
     color: white;
     border: none;
     padding: 8px 12px;
@@ -51,7 +51,7 @@ tr:hover {
 }
 
 .default-btn:hover, .copy-btn:hover {
-    background-color: #218838;
+    background-color: #2E7D32;
     color: white;
 }
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import logo from "../assets/the-fish-green.png";
+import logo from "../assets/ranger_logo.jpg";
 import "../style/auth.css"; 
 
 export const Auth = () => {
