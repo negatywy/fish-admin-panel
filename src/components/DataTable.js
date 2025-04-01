@@ -61,6 +61,7 @@ export const DataTable = () => {
                         association_club_name: data.association_club_name ?? null,
                         association_name: data.association_name ?? null,
                         controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
+                        controller_id: data.controller_id ?? null,
                         license_number: data.extractedLicenseNumber ?? null,
                         latitude: data.position?.latitude ?? null,  
                         longitude: data.position?.longitude ?? null,
@@ -166,7 +167,7 @@ export const DataTable = () => {
 
         const csvData = filteredData.map((item, index) => ({
             "Data kontroli": item.control_date ? item.control_date.toLocaleString() : null,
-            "Strażnik": `Strażnik ${index + 1}`,
+            "Strażnik": item.controller_name ? item.controller_name : null, // `Strażnik ${index + 1}`
             "Zezwolenie": item.license_number ? item.license_number : null,
             "Koło": item.association_club_name ? item.association_club_name : null,
             "Szerokość geograficzna": item.latitude ? item.latitude : null,
@@ -206,6 +207,7 @@ export const DataTable = () => {
                         <tr>
                             <th>Data kontroli</th>
                             <th>Strażnik</th>
+                            <th>ID Strażnika</th>
                             <th>Zezwolenie</th>
                             <th>Koło</th>
                             <th>Szerokość geograficzna</th>
@@ -219,6 +221,7 @@ export const DataTable = () => {
                             <tr key={item.id}>
                                 <td>{item.control_date ? item.control_date.toLocaleString() : "Brak"}</td>
                                 <td>{item.controller_name}</td>
+                                <td>{item.controller_id}</td>
                                 <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
                                 <td>{item.latitude}</td>

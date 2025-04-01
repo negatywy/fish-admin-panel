@@ -43,6 +43,7 @@ export const RangerStats = () => {
                 querySnapshot.docs.forEach(doc => {
                     const data = doc.data();
                     const ranger = data.controller_name || "Nieznany";
+                    const rangerID = data.controller_id || "Nieznany";
                     const isSuccess = data.is_success ?? false;
                     const controlDate = data.control_date?.toDate() ?? null;
 
@@ -59,6 +60,7 @@ export const RangerStats = () => {
                     if (!rangerData[ranger]) {
                         rangerData[ranger] = {
                             name: ranger,
+                            id: rangerID,
                             totalControls: 0,
                             successfulControls: 0,
                             rejectedControls: 0,
@@ -135,6 +137,7 @@ export const RangerStats = () => {
 
         const csvData = filteredStats.map(ranger => ({
             "Strażnik": ranger.name,
+            "ID Strażnika": ranger.id,
             "Liczba kontroli": ranger.totalControls,
             "Kontrole pozytywne": ranger.successfulControls,
             "Kontrole negatywne": ranger.rejectedControls
@@ -168,15 +171,17 @@ export const RangerStats = () => {
                     <thead>
                         <tr>
                             <th>Strażnik</th>
+                            <th>ID Strażnika</th>
                             <th>Liczba kontroli</th>
                             <th>Kontrole pozytywne</th>
-                            <th>Kontrole negatywne</th>
+                            <th>Wykryte wykroczenia</th>
                         </tr>
                     </thead>
                     <tbody>
                         {currentRows.map((ranger, index) => (
                             <tr key={index}>
                                 <td>{ranger.name}</td>
+                                <td>{ranger.id}</td>
                                 <td>{ranger.totalControls}</td>
                                 <td>{ranger.successfulControls}</td>
                                 <td>{ranger.rejectedControls}</td>

@@ -63,6 +63,7 @@ export const ControlMap = () => {
                         control_date: data.control_date?.toDate() ?? null,
                         association_name: data.association_name ?? null,
                         controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
+                        controller_id: data.controller_id ?? null,
                         lat: data.position?.latitude ?? null,
                         lng: data.position?.longitude ?? null,
                         is_success: data.is_success ?? false,
@@ -142,7 +143,8 @@ export const ControlMap = () => {
                             <strong>{point.is_success ? "✅ OK" : "❌ Wykroczenia"}</strong><br />
                             {point.control_date ? point.control_date.toLocaleString() : "No control date"}<br />
                             <strong>Zezwolenie: </strong>{point.license_number ? `${point.license_number}` : "Brak"}<br />
-                            <strong>Strażnik: </strong>{point.controller_name ? `${point.controller_name}` : "Brak"}
+                            <strong>Strażnik: </strong>{point.controller_name ? `${point.controller_name}` : "Brak"}<br />
+                            <strong>ID: </strong>{point.controller_name ? `${point.controller_id}` : "Brak"}
                         </Popup>
                     </Marker>
                 ))}
