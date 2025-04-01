@@ -210,8 +210,7 @@ export const DataTable = () => {
                             <th>ID Strażnika</th>
                             <th>Zezwolenie</th>
                             <th>Koło</th>
-                            <th>Szerokość geograficzna</th>
-                            <th>Długość geograficzna</th>
+                            <th>Pozycja</th>
                             <th>Wynik kontroli</th>
                             <th>Szczegóły kontroli</th>
                         </tr>
@@ -224,8 +223,13 @@ export const DataTable = () => {
                                 <td>{item.controller_id}</td>
                                 <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
-                                <td>{item.latitude}</td>
-                                <td>{item.longitude}</td>
+                                <td><a  href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        style={{ color: "#246928" }}>
+                                        Zobacz na mapie
+                                    </a>
+                                </td>
                                 <td>{item.is_success ? "✅ OK" : "❌ Wykroczenia"}</td>
                                 <td>
                                     {item.reason ? (
