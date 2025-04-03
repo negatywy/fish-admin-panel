@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
@@ -24,10 +24,6 @@ export const DataTable = () => {
                 console.log("Łączenie z Firestore...");
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
     
-                if (querySnapshot.empty) {
-                    console.warn("Firestore zwrócił pustą kolekcję.");
-                }
-
                 const user = auth.currentUser;
                 let regionName ="all";
                 switch (user.email) {
@@ -46,32 +42,48 @@ export const DataTable = () => {
                 // const rangerMapping = {};
                 // let rangerCounter = 1;
 
-                const items = querySnapshot.docs.map((doc) => {
-                    const data = doc.data();
-                    const rangerName = data.controller_name ?? "Nieznany";
-
-                    // do anonimizacji
-                    // if (!(rangerName in rangerMapping)) {
-                    //     rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
-                    // }
-
-                    return {
-                        id: doc.id,
-                        control_date: data.control_date?.toDate() ?? null,
-                        association_club_name: data.association_club_name ?? null,
-                        association_name: data.association_name ?? null,
-                        controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
-                        controller_id: data.controller_id ?? null,
-                        license_number: data.extractedLicenseNumber ?? null,
-                        latitude: data.position?.latitude ?? null,  
-                        longitude: data.position?.longitude ?? null,
-                        is_success: data.is_success ?? null,
-                        reason: data.rejection_reason ?? null 
-                    };
-                })
-                .filter(item => item.association_name === regionName)
+                const items = await Promise.all(
+                    querySnapshot.docs.map(async (document) => {
+                        const data = document.data();
+                        const rangerName = data.controller_name ?? "Nieznany";
+                        const controllerId = data.controller_id ?? null;
+                        let email = null;
     
-                const sortedItems = items.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
+                        if (controllerId) {
+                            try {
+                                const userDoc = await getDoc(doc(db, "users", controllerId));
+                                if (userDoc.exists()) {
+                                    email = userDoc.data().email ?? "Brak e-maila";
+                                }
+                            } catch (error) {
+                                console.error(`Błąd pobierania e-maila dla ID: ${controllerId}`, error);
+                            }
+                        }
+    
+                        // do anonimizacji
+                        // if (!(rangerName in rangerMapping)) {
+                        //     rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
+                        // }
+
+                        return {
+                            id: document.id,
+                            control_date: data.control_date?.toDate() ?? null,
+                            association_club_name: data.association_club_name ?? null,
+                            association_name: data.association_name ?? null,
+                            controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
+                            controller_id: controllerId,
+                            controller_email: email,  // Add email here
+                            license_number: data.extractedLicenseNumber ?? null,
+                            latitude: data.position?.latitude ?? null,  
+                            longitude: data.position?.longitude ?? null,
+                            is_success: data.is_success ?? null,
+                            reason: data.rejection_reason ?? null 
+                        };
+                    })
+                );
+    
+                const filteredItems = items.filter(item => item.association_name === regionName);
+                const sortedItems = filteredItems.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
     
                 console.log("Przetworzone dane (posortowane):", sortedItems);
                 setData(sortedItems);
@@ -83,6 +95,7 @@ export const DataTable = () => {
     
         fetchData();
     }, []);
+    
     
     useEffect(() => {
         filterData();
@@ -168,6 +181,7 @@ export const DataTable = () => {
         const csvData = filteredData.map((item, index) => ({
             "Data kontroli": item.control_date ? item.control_date.toLocaleString() : null,
             "Strażnik": item.controller_name ? item.controller_name : null, // `Strażnik ${index + 1}`
+            "ID Strażnika": item.controller_email ? item.controller_email : null,
             "Zezwolenie": item.license_number ? item.license_number : null,
             "Koło": item.association_club_name ? item.association_club_name : null,
             "Szerokość geograficzna": item.latitude ? item.latitude : null,
@@ -220,7 +234,7 @@ export const DataTable = () => {
                             <tr key={item.id}>
                                 <td>{item.control_date ? item.control_date.toLocaleString() : "Brak"}</td>
                                 <td>{item.controller_name}</td>
-                                <td>{item.controller_id}</td>
+                                <td>{item.controller_email}</td>
                                 <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
                                 <td><a  href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`} 

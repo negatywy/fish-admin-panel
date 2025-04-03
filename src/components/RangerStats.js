@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
@@ -21,16 +21,13 @@ export const RangerStats = () => {
                 if (querySnapshot.empty) return;
 
                 const user = auth.currentUser;
-                let regionName ="all";
-                switch (user.email) {
+                let regionName = "all";
+                switch (user?.email) {
                     case "admin.ompzw@naturai.pl":
                         regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
                         break;
                     case "admin.tbga@naturai.pl":
                         regionName = "Okręg PZW w Tarnobrzegu";
-                        break;
-                    default:
-                        regionName = "all";
                         break;
                 }
 
@@ -40,12 +37,25 @@ export const RangerStats = () => {
                 let rangerCounter = 1;
                 const rangerMapping = {};
 
-                querySnapshot.docs.forEach(doc => {
-                    const data = doc.data();
+                await Promise.all(querySnapshot.docs.map(async (document) => {
+                    const data = document.data();
                     const ranger = data.controller_name || "Nieznany";
                     const rangerID = data.controller_id || "Nieznany";
+                    let email = null;
                     const isSuccess = data.is_success ?? false;
                     const controlDate = data.control_date?.toDate() ?? null;
+
+                    if (rangerID) {
+                        try {
+                            const userDocRef = doc(db, "users", rangerID);
+                            const userDocSnap = await getDoc(userDocRef);
+                            if (userDocSnap.exists()) {
+                                email = userDocSnap.data().email ?? "Brak e-maila";
+                            }
+                        } catch (error) {
+                            console.error(`Błąd pobierania e-maila dla ID: ${rangerID}`, error);
+                        }
+                    }
 
                     if (!controlDate || controlDate.getFullYear() !== currentYear) return; 
                     if (regionName !== "all" && data.association_name !== regionName) return;
@@ -54,13 +64,10 @@ export const RangerStats = () => {
                         rangerMapping[ranger] = `Strażnik ${rangerCounter++}`;
                     }
 
-                    // const anonymizedName = rangerMapping[ranger];
-                    // const anonymizedName = ranger; // do anonimizacji
-
                     if (!rangerData[ranger]) {
                         rangerData[ranger] = {
                             name: ranger,
-                            id: rangerID,
+                            email: email,
                             totalControls: 0,
                             successfulControls: 0,
                             rejectedControls: 0,
@@ -76,7 +83,7 @@ export const RangerStats = () => {
                     }
                     
                     rangerData[ranger].controlDates.push(controlDate);
-                });
+                }));
 
                 const formattedStats = Object.values(rangerData);
                 setStats(formattedStats);
@@ -137,7 +144,7 @@ export const RangerStats = () => {
 
         const csvData = filteredStats.map(ranger => ({
             "Strażnik": ranger.name,
-            "ID Strażnika": ranger.id,
+            "ID Strażnika": ranger.email,
             "Liczba kontroli": ranger.totalControls,
             "Kontrole pozytywne": ranger.successfulControls,
             "Kontrole negatywne": ranger.rejectedControls
@@ -181,7 +188,7 @@ export const RangerStats = () => {
                         {currentRows.map((ranger, index) => (
                             <tr key={index}>
                                 <td>{ranger.name}</td>
-                                <td>{ranger.id}</td>
+                                <td>{ranger.email}</td>
                                 <td>{ranger.totalControls}</td>
                                 <td>{ranger.successfulControls}</td>
                                 <td>{ranger.rejectedControls}</td>

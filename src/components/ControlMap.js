@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "../style/App.css";
 import { db } from "../config/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -33,7 +33,7 @@ export const ControlMap = () => {
 
                 const user = auth.currentUser;
                 let regionName ="all";
-                switch (user.email) {
+                switch (user?.email) {
                     case "admin.ompzw@naturai.pl":
                         regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
                         break;
@@ -49,28 +49,44 @@ export const ControlMap = () => {
                 // const rangerMapping = {};
                 // let rangerCounter = 1;
 
-                const fetchedPoints = querySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    const rangerName = data.controller_name ?? "Nieznany";
+                const fetchedPoints = [];
 
-                    // do anonimizacji
-                    // if (!(rangerName in rangerMapping)) {
-                    //     rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
-                    // }
+                await Promise.all(
+                    querySnapshot.docs.map(async (document) => {
+                        const data = document.data();
+                        if (!data.position || !data.position.latitude || !data.position.longitude) return;
+                        if (regionName !== "all" && data.association_name !== regionName) return;
 
-                    return {
-                        id: doc.id,
-                        control_date: data.control_date?.toDate() ?? null,
-                        association_name: data.association_name ?? null,
-                        controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
-                        controller_id: data.controller_id ?? null,
-                        lat: data.position?.latitude ?? null,
-                        lng: data.position?.longitude ?? null,
-                        is_success: data.is_success ?? false,
-                        association_club_name: data.association_club_name ?? "",
-                        license_number: data.extractedLicenseNumber ?? null
-                    };
-                }).filter(point => point.lat !== null && point.lng !== null && point.association_name === regionName);
+                        const rangerName = data.controller_name ?? "Nieznany";
+                        const controllerId = data.controller_id ?? null;
+                        let email = null;
+
+                        if (controllerId) {
+                            try {
+                                const userDoc = await getDoc(doc(db, "users", controllerId));
+                                if (userDoc.exists()) {
+                                    email = userDoc.data().email ?? "Brak e-maila";
+                                }
+                            } catch (error) {
+                                console.error(`Błąd pobierania e-maila dla ID: ${controllerId}`, error);
+                            }
+                        }
+
+                        fetchedPoints.push({
+                            id: document.id,
+                            control_date: data.control_date?.toDate() ?? null,
+                            association_name: data.association_name ?? null,
+                            controller_name: rangerName,
+                            controller_id: controllerId ?? null,
+                            controller_email: email,
+                            lat: data.position.latitude,
+                            lng: data.position.longitude,
+                            is_success: data.is_success ?? false,
+                            association_club_name: data.association_club_name ?? "",
+                            license_number: data.extractedLicenseNumber ?? null,
+                        });
+                    })
+                );
 
                 setPoints(fetchedPoints);
             } catch (error) {
@@ -144,7 +160,7 @@ export const ControlMap = () => {
                             {point.control_date ? point.control_date.toLocaleString() : "No control date"}<br />
                             <strong>Zezwolenie: </strong>{point.license_number ? `${point.license_number}` : "Brak"}<br />
                             <strong>Strażnik: </strong>{point.controller_name ? `${point.controller_name}` : "Brak"}<br />
-                            <strong>ID: </strong>{point.controller_name ? `${point.controller_id}` : "Brak"}
+                            <strong>ID: </strong>{point.controller_name ? `${point.controller_email}` : "Brak"}
                         </Popup>
                     </Marker>
                 ))}
