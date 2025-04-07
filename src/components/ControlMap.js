@@ -173,7 +173,7 @@ export const ControlMap = () => {
                             {point.control_date ? point.control_date.toLocaleString() : "No control date"}<br />
                             <strong>Zezwolenie: </strong>{point.license_number ? `${point.license_number}` : "Brak"}<br />
                             <strong>Strażnik: </strong>{point.controller_name ? `${point.controller_name}` : "Brak"}<br />
-                            <strong>ID: </strong>{point.controller_name ? `${point.controller_email}` : "Brak"}
+                            <strong>ID: </strong>{point.controller_email ? `${point.controller_email}` : "Brak"}
                         </Popup>
                     </Marker>
                 ))}
