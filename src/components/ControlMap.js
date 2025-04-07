@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "../style/App.css";
 import { db } from "../config/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
@@ -10,6 +10,16 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { Filters } from "./Filters";
 import { useFilters } from "../context/FilterContext";
 import { auth } from "../config/firebase";
+
+const SetMapCenter = ({ center }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        map.setView(center);
+    }, [center, map]);
+
+    return null;
+};
 
 const defaultIcon = L.icon({
     iconUrl: markerIcon,
@@ -25,6 +35,7 @@ export const ControlMap = () => {
     const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
     const [points, setPoints] = useState([]);
     const [filteredPoints, setFilteredPoints] = useState([]);
+    const [mapCenter, setMapCenter] = useState([52.4461, 21.0302]);
 
     useEffect(() => {
         const fetchPoints = async () => {
@@ -36,12 +47,13 @@ export const ControlMap = () => {
                 switch (user?.email) {
                     case "admin.ompzw@naturai.pl":
                         regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
+                        setMapCenter([52.4461, 21.0302]); 
                         break;
                     case "admin.tbga@naturai.pl":
                         regionName = "Okręg PZW w Tarnobrzegu";
+                        setMapCenter([50.5663, 21.7001]);
                         break;
                     default:
-                        regionName = "all";
                         break;
                 }
 
@@ -140,11 +152,12 @@ export const ControlMap = () => {
                 showDownloadButton={false}
             />
             <MapContainer 
-                center={[52.4461, 21.0302]} 
+                center={mapCenter} 
                 zoom={10} 
                 style={{ height: "calc(90vh - 20px)", width: "100%" }}
                 className="map-container"
             >
+                <SetMapCenter center={mapCenter} />
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
