@@ -29,6 +29,9 @@ export const RangerStats = () => {
                     case "admin.tbga@naturai.pl":
                         regionName = "Okręg PZW w Tarnobrzegu";
                         break;
+                    default:
+                        regionName = "all";
+                        break;
                 }
 
                 const now = new Date();
@@ -67,7 +70,7 @@ export const RangerStats = () => {
                     if (!rangerData[ranger]) {
                         rangerData[ranger] = {
                             name: ranger,
-                            email: email,
+                            email: email.split("@")[0],
                             totalControls: 0,
                             successfulControls: 0,
                             rejectedControls: 0,
@@ -144,7 +147,7 @@ export const RangerStats = () => {
 
         const csvData = filteredStats.map(ranger => ({
             "Strażnik": ranger.name,
-            "ID Strażnika": ranger.email,
+            "ID Strażnika": ranger.email.split("@")[0],
             "Liczba kontroli": ranger.totalControls,
             "Kontrole pozytywne": ranger.successfulControls,
             "Kontrole negatywne": ranger.rejectedControls

@@ -72,7 +72,7 @@ export const DataTable = () => {
                             association_name: data.association_name ?? null,
                             controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
                             controller_id: controllerId,
-                            controller_email: email,  // Add email here
+                            controller_email: email.split("@")[0],  // Add email here
                             license_number: data.extractedLicenseNumber ?? null,
                             latitude: data.position?.latitude ?? null,  
                             longitude: data.position?.longitude ?? null,
@@ -181,7 +181,7 @@ export const DataTable = () => {
         const csvData = filteredData.map((item, index) => ({
             "Data kontroli": item.control_date ? item.control_date.toLocaleString() : null,
             "Strażnik": item.controller_name ? item.controller_name : null, // `Strażnik ${index + 1}`
-            "ID Strażnika": item.controller_email ? item.controller_email : null,
+            "ID Strażnika": item.controller_email ? item.controller_email.split("@")[0] : null,
             "Zezwolenie": item.license_number ? item.license_number : null,
             "Koło": item.association_club_name ? item.association_club_name : null,
             "Szerokość geograficzna": item.latitude ? item.latitude : null,
@@ -237,12 +237,16 @@ export const DataTable = () => {
                                 <td>{item.controller_email}</td>
                                 <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
-                                <td><a  href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`} 
-                                        target="_blank" 
+                                <td>{item.latitude != null && item.longitude != null ? (
+                                    <a
+                                        href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
+                                        target="_blank"
                                         rel="noopener noreferrer"
-                                        style={{ color: "#246928" }}>
-                                        Zobacz na mapie
-                                    </a>
+                                        style={{ color: "#246928" }}
+                                    >
+                                    Zobacz na mapie
+                                    </a>) : (<span style={{ color: "gray" }}>Brak danych</span>
+                                )}
                                 </td>
                                 <td>{item.is_success ? "✅ OK" : "❌ Wykroczenia"}</td>
                                 <td>
