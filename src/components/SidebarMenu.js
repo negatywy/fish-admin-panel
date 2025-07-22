@@ -23,7 +23,7 @@ export const SidebarMenu = ({ setActiveComponent }) => {
             <button className="default-btn" onClick={() => setActiveComponent("controlMap")}>Mapa kontroli</button>
             <button className="default-btn" onClick={() => setActiveComponent("rangerStats")}>Statystyki strażników</button>
             <button disabled={true}>Wykresy statystyk</button>
-            <button disabled={true}>Użytkownicy</button>
+            <button className="default-btn" onClick={() => setActiveComponent("userManagement")}>Użytkownicy</button>
         </div>
     );
 };

@@ -6,6 +6,7 @@ import { DataTable } from "./DataTable";
 import { ControlMap } from "./ControlMap";
 import { StatsCharts } from "./StatsCharts";
 import { RangerStats } from "./RangerStats";
+import UserManagement from "./UserManagement";
 import { useFilters } from "../context/FilterContext";
 import "../style/App.css";
 import "../style/table.css";
@@ -54,6 +55,7 @@ export const Dashboard = () => {
                 {activeComponent === "controlMap" && <ControlMap />}
                 {activeComponent === "statsCharts" && <StatsCharts />}
                 {activeComponent === "rangerStats" && <RangerStats />}
+                {activeComponent === "userManagement" && <UserManagement />}
             </div>
         </div>
     );
