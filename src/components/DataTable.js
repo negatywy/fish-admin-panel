@@ -17,13 +17,14 @@ export const DataTable = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [modalContent, setModalContent] = useState(null);
     const [copySuccess, setCopySuccess] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 console.log("Łączenie z Firestore...");
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
-    
+
                 const user = auth.currentUser;
                 let regionName ="all";
                 switch (user.email) {
@@ -48,7 +49,7 @@ export const DataTable = () => {
                         const rangerName = data.controller_name ?? "Nieznany";
                         const controllerId = data.controller_id ?? null;
                         let email = null;
-    
+
                         if (controllerId) {
                             try {
                                 const userDoc = await getDoc(doc(db, "users", controllerId));
@@ -72,27 +73,28 @@ export const DataTable = () => {
                             association_name: data.association_name ?? null,
                             controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
                             controller_id: controllerId,
-                            controller_email: email.split("@")[0],  // Add email here
+                            controller_email: email ? email.split("@")[0] : "Brak e-maila",
                             license_number: data.extractedLicenseNumber ?? null,
-                            latitude: data.position?.latitude ?? null,  
+                            latitude: data.position?.latitude ?? null,
                             longitude: data.position?.longitude ?? null,
                             is_success: data.is_success ?? null,
                             reason: data.rejection_reason ?? null 
                         };
                     })
                 );
-    
+
                 const filteredItems = items.filter(item => item.association_name === regionName);
                 const sortedItems = filteredItems.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
-    
+
                 console.log("Przetworzone dane (posortowane):", sortedItems);
                 setData(sortedItems);
                 setFilteredData(sortedItems);
             } catch (error) {
                 console.error("Błąd pobierania danych:", error);
             }
+            setLoading(false);
         };
-    
+
         fetchData();
     }, []);
     
@@ -200,6 +202,10 @@ export const DataTable = () => {
     const indexOfFirstRow = indexOfLastRow - rowsPerPage;
     const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+
+    if (loading) {
+        return <div style={{textAlign: "center", marginTop: 40}}><b>Ładowanie tabeli...</b></div>;
+    }
 
     return (
         <div>

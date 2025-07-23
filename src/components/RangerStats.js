@@ -13,12 +13,16 @@ export const RangerStats = () => {
     const [dateFilter, setDateFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
-                if (querySnapshot.empty) return;
+                if (querySnapshot.empty) {
+                    setLoading(false);
+                    return;
+                }
 
                 const user = auth.currentUser;
                 let regionName = "all";
@@ -70,7 +74,7 @@ export const RangerStats = () => {
                     if (!rangerData[ranger]) {
                         rangerData[ranger] = {
                             name: ranger,
-                            email: email.split("@")[0],
+                            email: email ? email.split("@")[0] : "Brak e-maila",
                             totalControls: 0,
                             successfulControls: 0,
                             rejectedControls: 0,
@@ -94,6 +98,7 @@ export const RangerStats = () => {
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
+            setLoading(false);
         };
 
         fetchData();
@@ -163,6 +168,10 @@ export const RangerStats = () => {
     const indexOfFirstRow = indexOfLastRow - rowsPerPage;
     const currentRows = filteredStats.slice(indexOfFirstRow, indexOfLastRow);
     const totalPages = Math.ceil(filteredStats.length / rowsPerPage);
+
+    if (loading) {
+        return <div style={{textAlign: "center", marginTop: 40}}><b>Ładowanie statystyk...</b></div>;
+    }
 
     return (
         <div>
