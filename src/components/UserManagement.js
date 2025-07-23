@@ -7,12 +7,103 @@ import { auth } from "../config/firebase";
 // sprawdzić czy identyfikator istnieje
 // walidacja wszystkich pól
 // wpisać działanie do logów
-const CreateUser = () => (
-    <div>
-        <h2>Tworzenie nowego użytkownika</h2>
-        <p>Formularz do tworzenia użytkownika...</p>
-    </div>
-);
+const associationOptions = [
+    { id: "GMUe0Hd56WJ7U0HQ3qpa", name: "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie" },
+    { id: "hpAlqBYPhqCdlSJVc9RG", name: "Okręg PZW w Tarnobrzegu" },
+];
+
+const CreateUser = () => {
+    const [email, setEmail] = useState("");
+    const [displayName, setDisplayName] = useState("");
+    const [association, setAssociation] = useState(associationOptions[0].id);
+    const [status, setStatus] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleCreate = async (e) => {
+        e.preventDefault();
+        setStatus("");
+        if (!email) {
+            setStatus("Podaj login użytkownika.");
+            return;
+        }
+        if (!displayName) {
+            setStatus("Podaj imię i nazwisko użytkownika.");
+            return;
+        }
+        setLoading(true);
+        const userEmail = email.includes("@") ? email : `${email}@ranger.pl`;
+        const assocObj = associationOptions.find(opt => opt.id === association);
+        const association_name = assocObj ? assocObj.name : "";
+        const association_id = assocObj ? doc(db, "associations", assocObj.id) : null;
+
+        try {
+            await setDoc(doc(collection(db, "users")), {
+                app_version: "1.0.0",
+                created_time: serverTimestamp(),
+                roles: ["ranger"],
+                association_name,
+                association_id,
+                email: userEmail,
+                display_name: displayName
+            });
+            const adminEmail = auth.currentUser?.email || "brak";
+            await setDoc(doc(collection(db, "user_mngmnt_logs")), {
+                date: serverTimestamp(),
+                action: "create",
+                admin: adminEmail,
+                user: userEmail
+            });
+            setStatus("Użytkownik został dodany.");
+            setEmail("");
+            setDisplayName("");
+            setAssociation(associationOptions[0].id);
+        } catch (err) {
+            setStatus("Błąd podczas dodawania użytkownika.");
+        }
+        setLoading(false);
+    };
+
+    return (
+        <div>
+            <h2>Tworzenie nowego użytkownika</h2>
+            <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 12}}>
+                <label>
+                    Login: 
+                        <input
+                            type="text"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            disabled={loading}
+                            style={{marginLeft: 8, width: 150}}
+                        />
+                </label>
+                <label>
+                    Imię i nazwisko:
+                    <input
+                        type="text"
+                        value={displayName}
+                        onChange={e => setDisplayName(e.target.value)}
+                        disabled={loading}
+                        style={{marginLeft: 8, width: 250}}
+                    />
+                </label>
+                <label>
+                    Okręg:
+                    <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
+                            style={{marginLeft: 8, width: 420}}>
+                        {associationOptions.map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.name}</option>
+                        ))}
+                    </select>
+                </label>
+                <button className="default-btn" type="submit" disabled={loading} 
+                            style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
+            </form>
+            {loading && <div style={{ color: "#246928", marginTop: 8 }}>Dodawanie użytkownika...</div>}
+            {status && <div style={{ color: status.includes("dodany") ? "green" : "red", marginTop: 8 }}>{status}</div>}
+        </div>
+    );
+};
 
 const DeleteUser = () => {
     const [login, setLogin] = useState("");
@@ -25,9 +116,7 @@ const DeleteUser = () => {
             setStatus("Podaj login użytkownika.");
             return;
         }
-        setLoading(true); // Start loading
-
-        // Dodaj domenę do loginu
+        setLoading(true); 
         const email = login.includes("@") ? login : `${login}@ranger.pl`;
 
         let userDocRef = null;
