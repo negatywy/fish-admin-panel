@@ -17,6 +17,7 @@ const CreateUser = () => (
 const DeleteUser = () => {
     const [login, setLogin] = useState("");
     const [status, setStatus] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleDelete = async () => {
         setStatus("");
@@ -24,31 +25,40 @@ const DeleteUser = () => {
             setStatus("Podaj login użytkownika.");
             return;
         }
+        setLoading(true); // Start loading
+
+        // Dodaj domenę do loginu
+        const email = login.includes("@") ? login : `${login}@ranger.pl`;
+
         let userDocRef = null;
         let userDocSnap = null;
         try {
             const usersSnapshot = await getDocs(collection(db, "users"));
-            const found = usersSnapshot.docs.find(docu => (docu.data().email || "") === login);
+            const found = usersSnapshot.docs.find(docu => (docu.data().email || "") === email);
             if (!found) {
                 setStatus("Nie znaleziono użytkownika o podanym loginie.");
+                setLoading(false);
                 return;
             }
             userDocRef = doc(db, "users", found.id);
             userDocSnap = found;
         } catch (err) {
             setStatus("Błąd podczas wyszukiwania użytkownika.");
+            setLoading(false);
             return;
         }
 
         const password = window.prompt("Aby usunąć użytkownika, wpisz hasło bezpieczeństwa:");
         if (password !== "DeleteIt") {
             setStatus("Niepoprawne hasło. Operacja anulowana.");
+            setLoading(false);
             return;
         }
 
-        const confirm = window.confirm(`Czy na pewno chcesz usunąć użytkownika o loginie: ${login}?`);
+        const confirm = window.confirm(`Czy na pewno chcesz usunąć użytkownika o loginie: ${email}?`);
         if (!confirm) {
             setStatus("Usuwanie anulowane.");
+            setLoading(false);
             return;
         }
 
@@ -60,12 +70,14 @@ const DeleteUser = () => {
                 date: serverTimestamp(),
                 action: "delete",
                 admin: adminEmail,
-                user: login
+                user: email
             });
         } catch (err) {
             setStatus("Błąd podczas usuwania użytkownika.");
+            setLoading(false);
             return;
         }
+        setLoading(false);
     };
 
     return (
@@ -77,11 +89,18 @@ const DeleteUser = () => {
                     placeholder="Login użytkownika"
                     value={login}
                     onChange={e => setLogin(e.target.value)}
+                    disabled={loading}
                 />
-                <button className="default-btn" onClick={handleDelete} style={{ marginLeft: 8 }}>
+                <button
+                    className="default-btn"
+                    onClick={handleDelete}
+                    style={{ marginLeft: 8 }}
+                    disabled={loading}
+                >
                     Usuń
                 </button>
             </div>
+            {loading && <div style={{ color: "#246928", marginBottom: 8 }}>Wyszukiwanie użytkownika...</div>}
             {status && <div style={{ color: status.includes("poprawnie") ? "green" : "red" }}>{status}</div>}
         </div>
     );

@@ -7,6 +7,11 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import "../style/App.css";
 import { auth } from "../config/firebase";
 
+/* QUERY DO SZUKANIA RANGERÓW
+
+.collection("users")
+.where("roles", "array-contains", "ranger") */
+
 export const RangerStats = () => {
     const [stats, setStats] = useState([]);
     const [filteredStats, setFilteredStats] = useState([]);
