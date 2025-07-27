@@ -80,24 +80,31 @@ export const RangerStats = () => {
                         rangerData[ranger] = {
                             name: ranger,
                             email: email ? email.split("@")[0] : "Brak e-maila",
-                            totalControls: 0,
-                            successfulControls: 0,
-                            rejectedControls: 0,
-                            controlDates: []
+                            controlResults: [], // dodajemy tablicę obiektów {date, isSuccess}
                         };
                     }
 
-                    rangerData[ranger].totalControls += 1;
-                    if (isSuccess) {
-                        rangerData[ranger].successfulControls += 1;
-                    } else {
-                        rangerData[ranger].rejectedControls += 1;
-                    }
-                    
-                    rangerData[ranger].controlDates.push(controlDate);
+                    rangerData[ranger].controlResults.push({ date: controlDate, isSuccess });
                 }));
 
-                const formattedStats = Object.values(rangerData);
+                // Przelicz statystyki dla każdego strażnika
+                const formattedStats = Object.values(rangerData).map(ranger => {
+                    const totalControls = ranger.controlResults.length;
+                    const successfulControls = ranger.controlResults.filter(res => res.isSuccess).length;
+                    const rejectedControls = totalControls - successfulControls;
+                    const controlDates = ranger.controlResults.map(res => res.date);
+                    // Liczba patroli: unikalne dni z jakimkolwiek zapisem
+                    const patrolDays = new Set(controlDates.map(date => date ? date.toISOString().slice(0, 10) : null)).size;
+                    return {
+                        ...ranger,
+                        totalControls,
+                        successfulControls,
+                        rejectedControls,
+                        controlDates,
+                        patrolDays,
+                        controlResults: ranger.controlResults
+                    };
+                });
                 setStats(formattedStats);
                 setFilteredStats(formattedStats);
             } catch (error) {
@@ -112,6 +119,7 @@ export const RangerStats = () => {
     useEffect(() => {
         const filterStats = () => {
             if (dateFilter === "all") {
+                // Pokazuj pełne statystyki
                 setFilteredStats(stats);
                 setCurrentPage(1);
                 return;
@@ -126,9 +134,26 @@ export const RangerStats = () => {
                 cutoffDate.setMonth(now.getMonth() - 1);
             }
 
-            const filtered = stats.filter(ranger => 
-                ranger.controlDates.some(date => date >= cutoffDate)
-            );
+            // Przefiltruj statystyki tylko dla wybranego zakresu dat
+            const filtered = stats
+                .map(ranger => {
+                    const filteredResults = ranger.controlResults.filter(res => res.date >= cutoffDate);
+                    const totalControls = filteredResults.length;
+                    const successfulControls = filteredResults.filter(res => res.isSuccess).length;
+                    const rejectedControls = totalControls - successfulControls;
+                    const controlDates = filteredResults.map(res => res.date);
+                    const patrolDays = new Set(controlDates.map(date => date ? date.toISOString().slice(0, 10) : null)).size;
+                    return {
+                        ...ranger,
+                        totalControls,
+                        successfulControls,
+                        rejectedControls,
+                        controlDates,
+                        patrolDays,
+                        controlResults: filteredResults
+                    };
+                })
+                .filter(ranger => ranger.totalControls > 0);
 
             setFilteredStats(filtered);
             setCurrentPage(1);
@@ -158,6 +183,7 @@ export const RangerStats = () => {
         const csvData = filteredStats.map(ranger => ({
             "Strażnik": ranger.name,
             "ID Strażnika": ranger.email.split("@")[0],
+            "Liczba patroli": ranger.patrolDays,
             "Liczba kontroli": ranger.totalControls,
             "Kontrole pozytywne": ranger.successfulControls,
             "Kontrole negatywne": ranger.rejectedControls
@@ -196,6 +222,7 @@ export const RangerStats = () => {
                         <tr>
                             <th>Strażnik</th>
                             <th>ID Strażnika</th>
+                            <th>Liczba patroli</th>
                             <th>Liczba kontroli</th>
                             <th>Kontrole pozytywne</th>
                             <th>Wykryte wykroczenia</th>
@@ -206,6 +233,7 @@ export const RangerStats = () => {
                             <tr key={index}>
                                 <td>{ranger.name}</td>
                                 <td>{ranger.email}</td>
+                                <td>{ranger.patrolDays}</td>
                                 <td>{ranger.totalControls}</td>
                                 <td>{ranger.successfulControls}</td>
                                 <td>{ranger.rejectedControls}</td>
