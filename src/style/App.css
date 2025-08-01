@@ -1,0 +1,128 @@
+body {
+  background-color: #EBEBEB;
+}
+
+.App {
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  background: linear-gradient(135deg, #EBEBEB, #CAD2C5);
+  padding: 10px;
+  border: #2469275d solid 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar-logo {
+  width: 100%;
+  height: auto;
+  margin-bottom: 15px;
+  border-radius: 7px;
+}
+
+.main-content {
+  flex: 1;
+  margin-top: 40px;
+  padding: 20px;
+  overflow-y: auto; 
+  height: calc(100% - 80px); 
+}
+.sidebar button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+}
+
+.topbar {
+  width: calc(100% - 263px);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 60px;
+  background: linear-gradient(135deg, #CAD2C5, #EBEBEB);
+  padding: 0 20px;
+  color: white;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 998;
+  border: #2469275d solid 1px;
+}
+
+.user-button {
+  color: white !important;
+  background-color: #2e7d32a9 !important;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px 10px !important;
+}
+
+.user-button:hover {
+  background-color: #246928 !important;
+  transition: 500ms;
+}
+
+.map-container {
+  height: 100%;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+  color: red;
+}
+
+.clickable {
+  cursor: pointer;
+}

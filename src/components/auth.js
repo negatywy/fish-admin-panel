@@ -1,42 +1,49 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
-import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import logo from "../assets/ranger_logo.jpg";
+import "../style/auth.css"; 
 
 export const Auth = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     console.log(auth?.currentUser?.email);
 
-    const signIn = async () => {
+    const login = async () => {
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            await signInWithEmailAndPassword(auth, email, password);
+            navigate("/dashboard");
         } catch (err) {
-            console.error(err);
-        }        
-    };
-
-    const logout = async () => {
-        try {
-            await signOut(auth);
-        } catch (err) {
-            console.error(err);
+            setError("Podano błędne dane logowania.");
         }        
     };
 
     return (
-        <div>
-            <input 
-                placeholder="Email..." 
-                onChange={(e) => setEmail(e.target.value)}
-            />
-            <input 
-                placeholder="Password..."
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-            />
-            <button onClick={signIn}>Sign in</button>
-            <button onClick={logout}>Logout</button>
+        <div className="auth-container">
+            <div className="auth-content">
+                <img src={logo} alt="Logo" className="auth-logo" />
+                <div className="auth-box">
+                    <h1>Zaloguj się</h1>
+                    <input 
+                        className="auth-input"
+                        placeholder="Email..." 
+                        type="email"
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <input 
+                        className="auth-input"
+                        placeholder="Hasło..."
+                        type="password"
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {error && <p className="error-message">{error}</p>}
+                    <button className="auth-button" onClick={login}>Zaloguj się</button>
+                </div>
+            </div>
         </div>
     );
 };
