@@ -1,5 +1,5 @@
 
-# Fish Admin Panel
+# The Fish Ranger Admin Panel
 
 Panel administracyjny do zarządzania użytkownikami, kontrolami straży rybackiej oraz statystykami strażników dla Okręgu Mazowieckiego PZW.
 
