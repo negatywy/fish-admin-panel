@@ -23,6 +23,7 @@
     width: 300px;
     height: auto;
     border-radius: 10px;
+    margin-right: 10px;
 }
 
 .auth-box {
@@ -34,8 +35,12 @@
 }
 
 .auth-box h1 {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     font-size: 2rem;
+}
+
+.auth-box h2 {
+    margin-bottom: 5px;
 }
 
 .auth-input,
@@ -65,3 +70,38 @@
     color: #d71717;
     margin-top: 10px;
 }
+
+@media (max-width: 768px) {
+    .auth-content {
+        flex-direction: column;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .auth-logo {
+        width: 80%;
+        max-width: 250px;
+        margin: 0 auto;
+    }
+
+    .auth-box {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .auth-box h1 {
+        font-size: 1.5rem;
+    }
+
+    .auth-input,
+    .auth-button {
+        font-size: 0.95rem;
+        padding: 10px;
+    }
+
+    .auth-container {
+        height: auto;
+        padding: 40px 20px;
+    }
+}
+
