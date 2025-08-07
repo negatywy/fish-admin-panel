@@ -4,9 +4,6 @@ import { db } from "../config/firebase";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { auth } from "../config/firebase";
 
-// sprawdzić czy identyfikator istnieje
-// walidacja wszystkich pól
-// wpisać działanie do logów
 const associationOptions = [
     { id: "GMUe0Hd56WJ7U0HQ3qpa", name: "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie" },
     { id: "hpAlqBYPhqCdlSJVc9RG", name: "Okręg PZW w Tarnobrzegu" },
@@ -364,11 +361,10 @@ const UserManagement = () => {
             <div style={{ marginBottom: 20 }}>
                 <button className="default-btn" onClick={() => setView("create")}>Utwórz nowego użytkownika</button>{" "}
                 <button className="default-btn" onClick={() => setView("delete")}>Usuń użytkownika</button>{" "}
-                <button className="default-btn" onClick={() => setView("logs")}>Zobacz logi</button>
+                <UserLogs />
             </div>
             {view === "create" && <CreateUser />}
             {view === "delete" && <DeleteUser />}
-            {view === "logs" && <UserLogs />}
         </div>
     );
 };
