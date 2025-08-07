@@ -27,7 +27,7 @@ export const Auth = () => {
 
     const generateQR = async () => {
         const random = Math.floor(1000 + Math.random() * 9000);
-        const qrCode = `patrol_${random}`;
+        const qrCode = `GRUPA_${random}`;
         const today = new Date().toISOString().slice(0, 10); 
 
         // Sprawdź, czy taki kod już istnieje dziś
