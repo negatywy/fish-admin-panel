@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { auth } from "../config/firebase";
@@ -37,8 +37,8 @@ const CreateUser = () => {
         const associationId = assocObj ? assocObj.id : "";
 
         try {
-            // Call Express backend
-            const res = await fetch("http://localhost:5000/api/create-users", {
+            const apiUrl = process.env.REACT_APP_API_URL;
+            const res = await fetch(`${apiUrl}/create-users`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -149,7 +149,8 @@ const DeleteUser = () => {
         }
 
         try {
-            const res = await fetch("http://localhost:5000/api/delete-user", {
+            const apiUrl = process.env.REACT_APP_API_URL;
+            const res = await fetch(`${apiUrl}/delete-user`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
