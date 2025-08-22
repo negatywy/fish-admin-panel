@@ -134,24 +134,6 @@ const DeleteUser = () => {
         setLoading(true); 
         const email = login.includes("@") ? login : `${login}@ranger.pl`;
 
-        let userDocRef = null;
-        let userDocSnap = null;
-        try {
-            const usersSnapshot = await getDocs(collection(db, "users"));
-            const found = usersSnapshot.docs.find(docu => (docu.data().email || "") === email);
-            if (!found) {
-                setStatus("Nie znaleziono użytkownika o podanym loginie.");
-                setLoading(false);
-                return;
-            }
-            userDocRef = doc(db, "users", found.id);
-            userDocSnap = found;
-        } catch (err) {
-            setStatus("Błąd podczas wyszukiwania użytkownika.");
-            setLoading(false);
-            return;
-        }
-
         const password = window.prompt("Aby usunąć użytkownika, wpisz hasło bezpieczeństwa:");
         if (password !== "DeleteIt") {
             setStatus("Niepoprawne hasło. Operacja anulowana.");
@@ -167,8 +149,21 @@ const DeleteUser = () => {
         }
 
         try {
-            await deleteDoc(userDocRef);
-            setStatus("Użytkownik został poprawnie usunięty.");
+            const res = await fetch("http://localhost:5000/api/delete-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setStatus(`✅ Użytkownik ${email} został poprawnie usunięty.`);
+            } else {
+                setStatus(`⚠️ Nie można usunąć użytkownika: ${data.message}`);
+            }
+
+            // Save log in Firestore
             const adminEmail = auth.currentUser?.email || "brak";
             await setDoc(doc(collection(db, "user_mngmnt_logs")), {
                 date: serverTimestamp(),
@@ -176,11 +171,12 @@ const DeleteUser = () => {
                 admin: adminEmail,
                 user: email
             });
+
         } catch (err) {
-            setStatus("Błąd podczas usuwania użytkownika.");
-            setLoading(false);
-            return;
+            console.error(err);
+            setStatus("❌ Błąd podczas usuwania użytkownika.");
         }
+
         setLoading(false);
     };
 

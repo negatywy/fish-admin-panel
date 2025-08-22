@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { createUsersWithPattern } = require('./createUsers');
+const { deleteUsers } = require('./deleteUsers');
 
 const app = express();
 app.use(bodyParser.json());
@@ -23,6 +24,18 @@ app.post('/api/create-users', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/delete-user", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    await deleteUsers(email);
+    res.json({ success: true, email });
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
