@@ -10,7 +10,7 @@ const associationOptions = [
 ];
 
 const CreateUser = () => {
-    const [email, setEmail] = useState("");
+    const [emailNo, setEmailNo] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [association, setAssociation] = useState(associationOptions[0].id);
     const [status, setStatus] = useState("");
@@ -20,8 +20,8 @@ const CreateUser = () => {
         e.preventDefault();
         setStatus("");
 
-        if (!email) {
-            setStatus("Podaj login użytkownika.");
+        if (!emailNo) {
+            setStatus("Podaj nr do loginu użytkownika.");
             return;
         }
         if (!displayName) {
@@ -31,7 +31,7 @@ const CreateUser = () => {
 
         setLoading(true);
 
-        const userEmail = email.includes("@") ? email : `${email}@ranger.pl`;
+        const userEmail = `MAZSSR_${emailNo}@ranger.pl`;
         const assocObj = associationOptions.find(opt => opt.id === association);
         const associationName = assocObj ? assocObj.name : "";
         const associationId = assocObj ? assocObj.id : "";
@@ -42,9 +42,8 @@ const CreateUser = () => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    basePattern: userEmail.split("@")[0],  // prefix before @
-                    startNumber: 1,                       // for single user, use start = end
-                    endNumber: 1,
+                    basePattern: "MAZSSR_",
+                    emailId: emailNo, 
                     appVersion: "1.0.0",
                     associationId,
                     associationName
@@ -67,7 +66,7 @@ const CreateUser = () => {
             });
 
             setStatus(`✅ Użytkownik został dodany. Email: ${data.users[0].email}, Hasło: ${data.users[0].password}`);
-            setEmail("");
+            setEmailNo("");
             setDisplayName("");
             setAssociation(associationOptions[0].id);
 
@@ -87,8 +86,8 @@ const CreateUser = () => {
                     Login: 
                         <input
                             type="text"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
+                            value={emailNo}
+                            onChange={e => setEmailNo(e.target.value)}
                             disabled={loading}
                             style={{marginLeft: 8, width: 150}}
                         />
@@ -103,7 +102,7 @@ const CreateUser = () => {
                         style={{marginLeft: 8, width: 250}}
                     />
                 </label>
-                <label>
+                {/* <label>
                     Okręg:
                     <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
                             style={{marginLeft: 8, width: 420}}>
@@ -111,7 +110,7 @@ const CreateUser = () => {
                             <option key={opt.id} value={opt.id}>{opt.name}</option>
                         ))}
                     </select>
-                </label>
+                </label> */}
                 <button className="default-btn" type="submit" disabled={loading} 
                             style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
             </form>

@@ -9,18 +9,17 @@ const cors = require('cors');
 app.use(cors());
 
 app.post('/api/create-users', async (req, res) => {
-  const { basePattern, startNumber, endNumber, appVersion, associationId, associationName } = req.body;
+  const { basePattern, emailId, appVersion, associationId, associationName } = req.body;
 
   try {
-    const users = await createUsersWithPattern(
+    const user = await createUsersWithPattern(
       basePattern,
-      startNumber,
-      endNumber,
+      emailId,
       appVersion,
       associationId,
       associationName
     );
-    res.json({ success: true, users });
+    res.json({ success: true, users: [user] });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: error.message });
