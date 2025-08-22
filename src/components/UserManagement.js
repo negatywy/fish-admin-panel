@@ -19,6 +19,7 @@ const CreateUser = () => {
     const handleCreate = async (e) => {
         e.preventDefault();
         setStatus("");
+
         if (!email) {
             setStatus("Podaj login użytkownika.");
             return;
@@ -27,22 +28,36 @@ const CreateUser = () => {
             setStatus("Podaj imię i nazwisko użytkownika.");
             return;
         }
+
         setLoading(true);
+
         const userEmail = email.includes("@") ? email : `${email}@ranger.pl`;
         const assocObj = associationOptions.find(opt => opt.id === association);
-        const association_name = assocObj ? assocObj.name : "";
-        const association_id = assocObj ? doc(db, "associations", assocObj.id) : null;
+        const associationName = assocObj ? assocObj.name : "";
+        const associationId = assocObj ? assocObj.id : "";
 
         try {
-            await setDoc(doc(collection(db, "users")), {
-                app_version: "1.0.0",
-                created_time: serverTimestamp(),
-                roles: ["ranger"],
-                association_name,
-                association_id,
-                email: userEmail,
-                display_name: displayName
+            // Call Express backend
+            const res = await fetch("http://localhost:5000/api/create-users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    basePattern: userEmail.split("@")[0],  // prefix before @
+                    startNumber: 1,                       // for single user, use start = end
+                    endNumber: 1,
+                    appVersion: "1.0.0",
+                    associationId,
+                    associationName
+                }),
             });
+
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.error || "Błąd backendu");
+            }
+
+            // Save log in Firestore (client side, as before)
             const adminEmail = auth.currentUser?.email || "brak";
             await setDoc(doc(collection(db, "user_mngmnt_logs")), {
                 date: serverTimestamp(),
@@ -50,13 +65,17 @@ const CreateUser = () => {
                 admin: adminEmail,
                 user: userEmail
             });
-            setStatus("Użytkownik został dodany.");
+
+            setStatus(`✅ Użytkownik został dodany. Email: ${data.users[0].email}, Hasło: ${data.users[0].password}`);
             setEmail("");
             setDisplayName("");
             setAssociation(associationOptions[0].id);
+
         } catch (err) {
-            setStatus("Błąd podczas dodawania użytkownika.");
+            console.error(err);
+            setStatus("❌ Błąd podczas dodawania użytkownika.");
         }
+
         setLoading(false);
     };
 
@@ -361,10 +380,10 @@ const UserManagement = () => {
             <div style={{ marginBottom: 20 }}>
                 <button className="default-btn" onClick={() => setView("create")}>Utwórz nowego użytkownika</button>{" "}
                 <button className="default-btn" onClick={() => setView("delete")}>Usuń użytkownika</button>{" "}
+                {view === "create" && <CreateUser />}
+                {view === "delete" && <DeleteUser />}
                 <UserLogs />
             </div>
-            {view === "create" && <CreateUser />}
-            {view === "delete" && <DeleteUser />}
         </div>
     );
 };
