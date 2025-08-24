@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/create-users', async (req, res) => {
+app.post('/create-users', async (req, res) => {
   const { basePattern, emailId, appVersion, associationId, associationName } = req.body;
 
   try {
@@ -28,7 +28,7 @@ app.post('/api/create-users', async (req, res) => {
   }
 });
 
-app.post("/api/delete-user", async (req, res) => {
+app.post("/delete-user", async (req, res) => {
   const { email } = req.body;
 
   try {
