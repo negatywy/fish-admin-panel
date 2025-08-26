@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { auth } from "../config/firebase";
 
-// sprawdzić czy identyfikator istnieje
-// walidacja wszystkich pól
-// wpisać działanie do logów
 const associationOptions = [
     { id: "GMUe0Hd56WJ7U0HQ3qpa", name: "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie" },
     { id: "hpAlqBYPhqCdlSJVc9RG", name: "Okręg PZW w Tarnobrzegu" },
 ];
 
 const CreateUser = () => {
-    const [email, setEmail] = useState("");
+    const [emailNo, setEmailNo] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [association, setAssociation] = useState(associationOptions[0].id);
     const [status, setStatus] = useState("");
@@ -22,30 +19,44 @@ const CreateUser = () => {
     const handleCreate = async (e) => {
         e.preventDefault();
         setStatus("");
-        if (!email) {
-            setStatus("Podaj login użytkownika.");
+
+        if (!emailNo) {
+            setStatus("Podaj nr do loginu użytkownika.");
             return;
         }
         if (!displayName) {
             setStatus("Podaj imię i nazwisko użytkownika.");
             return;
         }
+
         setLoading(true);
-        const userEmail = email.includes("@") ? email : `${email}@ranger.pl`;
+
+        const userEmail = `MAZSSR_${emailNo}@ranger.pl`;
         const assocObj = associationOptions.find(opt => opt.id === association);
-        const association_name = assocObj ? assocObj.name : "";
-        const association_id = assocObj ? doc(db, "associations", assocObj.id) : null;
+        const associationName = assocObj ? assocObj.name : "";
+        const associationId = assocObj ? assocObj.id : "";
 
         try {
-            await setDoc(doc(collection(db, "users")), {
-                app_version: "1.0.0",
-                created_time: serverTimestamp(),
-                roles: ["ranger"],
-                association_name,
-                association_id,
-                email: userEmail,
-                display_name: displayName
+            const apiUrl = process.env.REACT_APP_API_URL;
+            const res = await fetch(`${apiUrl}/create-users`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    basePattern: "MAZSSR_",
+                    emailId: emailNo, 
+                    appVersion: "1.0.0",
+                    associationId,
+                    associationName
+                }),
             });
+
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.error || "Błąd backendu");
+            }
+
+            // Save log in Firestore (client side, as before)
             const adminEmail = auth.currentUser?.email || "brak";
             await setDoc(doc(collection(db, "user_mngmnt_logs")), {
                 date: serverTimestamp(),
@@ -53,13 +64,17 @@ const CreateUser = () => {
                 admin: adminEmail,
                 user: userEmail
             });
-            setStatus("Użytkownik został dodany.");
-            setEmail("");
+
+            setStatus(`✅ Użytkownik został dodany. Email: ${data.users[0].email}, Hasło: ${data.users[0].password}`);
+            setEmailNo("");
             setDisplayName("");
             setAssociation(associationOptions[0].id);
+
         } catch (err) {
-            setStatus("Błąd podczas dodawania użytkownika.");
+            console.error(err);
+            setStatus("❌ Błąd podczas dodawania użytkownika.");
         }
+
         setLoading(false);
     };
 
@@ -71,8 +86,8 @@ const CreateUser = () => {
                     Login: 
                         <input
                             type="text"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
+                            value={emailNo}
+                            onChange={e => setEmailNo(e.target.value)}
                             disabled={loading}
                             style={{marginLeft: 8, width: 150}}
                         />
@@ -87,7 +102,7 @@ const CreateUser = () => {
                         style={{marginLeft: 8, width: 250}}
                     />
                 </label>
-                <label>
+                {/* <label>
                     Okręg:
                     <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
                             style={{marginLeft: 8, width: 420}}>
@@ -95,7 +110,7 @@ const CreateUser = () => {
                             <option key={opt.id} value={opt.id}>{opt.name}</option>
                         ))}
                     </select>
-                </label>
+                </label> */}
                 <button className="default-btn" type="submit" disabled={loading} 
                             style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
             </form>
@@ -119,24 +134,6 @@ const DeleteUser = () => {
         setLoading(true); 
         const email = login.includes("@") ? login : `${login}@ranger.pl`;
 
-        let userDocRef = null;
-        let userDocSnap = null;
-        try {
-            const usersSnapshot = await getDocs(collection(db, "users"));
-            const found = usersSnapshot.docs.find(docu => (docu.data().email || "") === email);
-            if (!found) {
-                setStatus("Nie znaleziono użytkownika o podanym loginie.");
-                setLoading(false);
-                return;
-            }
-            userDocRef = doc(db, "users", found.id);
-            userDocSnap = found;
-        } catch (err) {
-            setStatus("Błąd podczas wyszukiwania użytkownika.");
-            setLoading(false);
-            return;
-        }
-
         const password = window.prompt("Aby usunąć użytkownika, wpisz hasło bezpieczeństwa:");
         if (password !== "DeleteIt") {
             setStatus("Niepoprawne hasło. Operacja anulowana.");
@@ -152,8 +149,22 @@ const DeleteUser = () => {
         }
 
         try {
-            await deleteDoc(userDocRef);
-            setStatus("Użytkownik został poprawnie usunięty.");
+            const apiUrl = process.env.REACT_APP_API_URL;
+            const res = await fetch(`${apiUrl}/delete-user`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setStatus(`✅ Użytkownik ${email} został poprawnie usunięty.`);
+            } else {
+                setStatus(`⚠️ Nie można usunąć użytkownika: ${data.message}`);
+            }
+
+            // Save log in Firestore
             const adminEmail = auth.currentUser?.email || "brak";
             await setDoc(doc(collection(db, "user_mngmnt_logs")), {
                 date: serverTimestamp(),
@@ -161,11 +172,12 @@ const DeleteUser = () => {
                 admin: adminEmail,
                 user: email
             });
+
         } catch (err) {
-            setStatus("Błąd podczas usuwania użytkownika.");
-            setLoading(false);
-            return;
+            console.error(err);
+            setStatus("❌ Błąd podczas usuwania użytkownika.");
         }
+
         setLoading(false);
     };
 
@@ -364,11 +376,10 @@ const UserManagement = () => {
             <div style={{ marginBottom: 20 }}>
                 <button className="default-btn" onClick={() => setView("create")}>Utwórz nowego użytkownika</button>{" "}
                 <button className="default-btn" onClick={() => setView("delete")}>Usuń użytkownika</button>{" "}
-                <button className="default-btn" onClick={() => setView("logs")}>Zobacz logi</button>
+                {view === "create" && <CreateUser />}
+                {view === "delete" && <DeleteUser />}
+                <UserLogs />
             </div>
-            {view === "create" && <CreateUser />}
-            {view === "delete" && <DeleteUser />}
-            {view === "logs" && <UserLogs />}
         </div>
     );
 };
