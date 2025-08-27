@@ -166,81 +166,118 @@ const DeleteUser = () => {
     const [login, setLogin] = useState("");
     const [status, setStatus] = useState("");
     const [loading, setLoading] = useState(false);
+    const [deletePrefix, setDeletePrefix] = useState("MAZSSR_"); // default
 
     const handleDelete = async () => {
         setStatus("");
         if (!login) {
-            setStatus("Podaj login użytkownika.");
+            setStatus("Podaj login/y użytkownika.");
             return;
         }
-        setLoading(true); 
-        const email = login.includes("@") ? login : `${login}@ranger.pl`;
 
-        const password = window.prompt("Aby usunąć użytkownika, wpisz hasło bezpieczeństwa:");
+        setLoading(true);
+
+        const password = window.prompt("Aby usunąć użytkowników, wpisz hasło bezpieczeństwa:");
         if (password !== "DeleteIt") {
             setStatus("Niepoprawne hasło. Operacja anulowana.");
             setLoading(false);
             return;
         }
 
-        const confirm = window.confirm(`Czy na pewno chcesz usunąć użytkownika o loginie: ${email}?`);
-        if (!confirm) {
-            setStatus("Usuwanie anulowane.");
-            setLoading(false);
-            return;
-        }
-
         try {
+            // Parse input: ranges, comma-separated, or single
+            const parts = login.split(",").map(p => p.trim());
+            let emails = [];
+
+            for (const part of parts) {
+                if (part.includes("-")) {
+                    const [start, end] = part.split("-").map(p => p.trim());
+                    const startNum = parseInt(start, 10);
+                    const endNum = parseInt(end, 10);
+
+                    for (let i = startNum; i <= endNum; i++) {
+                        // 🔹 Use i directly without padStart
+                        emails.push(`${deletePrefix}${i}@ranger.pl`);
+                    }
+                } else {
+                    // 🔹 Use input as-is
+                    emails.push(`${deletePrefix}${part}@ranger.pl`);
+                }
+            }
+
+            const confirm = window.confirm(`Czy na pewno chcesz usunąć użytkowników:\n${emails.join("\n")}?`);
+            if (!confirm) {
+                setStatus("Usuwanie anulowane.");
+                setLoading(false);
+                return;
+            }
+
             const apiUrl = process.env.REACT_APP_API_URL;
-            const res = await fetch(`${apiUrl}/delete-user`, {
+            const res = await fetch(`${apiUrl}/delete-users`, { // 🔹 call batch route
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ emails }),
             });
 
             const data = await res.json();
 
-            if (data.success) {
-                setStatus(`✅ Użytkownik ${email} został poprawnie usunięty.`);
-            } else {
-                setStatus(`⚠️ Nie można usunąć użytkownika: ${data.message}`);
+            if (!data.success) {
+                throw new Error(data.error || "Błąd backendu");
             }
 
-            // Save log in Firestore
+            // Save logs for each user
             const adminEmail = auth.currentUser?.email || "brak";
-            await setDoc(doc(collection(db, "user_mngmnt_logs")), {
-                date: serverTimestamp(),
-                action: "delete",
-                admin: adminEmail,
-                user: email
-            });
+            for (const result of data.results) {
+                await setDoc(doc(collection(db, "user_mngmnt_logs")), {
+                    date: serverTimestamp(),
+                    action: "delete",
+                    admin: adminEmail,
+                    user: result.email,
+                    success: result.success
+                });
+            }
+
+            // Build status message
+            const successMsgs = data.results.filter(r => r.success).map(r => `✅ ${r.email}`);
+            const failMsgs = data.results.filter(r => !r.success).map(r => `❌ ${r.email}: ${r.message}`);
+
+            setStatus([...successMsgs, ...failMsgs].join("\n"));
 
         } catch (err) {
             console.error(err);
-            setStatus("❌ Błąd podczas usuwania użytkownika.");
+            setStatus("❌ Błąd podczas usuwania użytkowników.");
         }
 
         setLoading(false);
-    };
+        };
 
     return (
         <div>
             <h2>Usuwanie użytkownika</h2>
             <div style={{ marginBottom: 10 }}>
+                <p><label style={{ marginRight: 7 }}>Prefiks:</label>
+                <select
+                    value={deletePrefix}
+                    onChange={(e) => setDeletePrefix(e.target.value)}
+                >
+                    {associationOptions.map(opt => (
+                        <option key={opt.id} value={opt.prefix}>{opt.prefix}</option>
+                    ))}
+                </select></p>
+                <p><label style={{ marginRight: 7 }}>Loginy do usunięcia (np. 0001, 0002-0005):</label>
                 <input
                     type="text"
-                    placeholder="Login użytkownika"
                     value={login}
-                    onChange={e => setLogin(e.target.value)}
-                    disabled={loading}
-                />
+                    onChange={(e) => setLogin(e.target.value)}
+                    placeholder="np. 0001, 0002-0005"
+                /></p>
                 <button
                     className="default-btn"
                     onClick={handleDelete}
-                    style={{ marginLeft: 8 }}
+                    style={{ width: 480 }}
                     disabled={loading}
                 >
-                    Usuń
+                    Usuń użytkowników
                 </button>
             </div>
             {loading && <div style={{ color: "#246928", marginBottom: 8 }}>Wyszukiwanie użytkownika...</div>}
