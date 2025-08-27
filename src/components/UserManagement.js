@@ -5,8 +5,16 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { auth } from "../config/firebase";
 
 const associationOptions = [
-    { id: "GMUe0Hd56WJ7U0HQ3qpa", name: "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie" },
-    { id: "hpAlqBYPhqCdlSJVc9RG", name: "Okręg PZW w Tarnobrzegu" },
+  {
+    id: "GMUe0Hd56WJ7U0HQ3qpa",
+    name: "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie",
+    prefix: "MAZSSR_"
+  },
+  {
+    id: "hpAlqBYPhqCdlSJVc9RG",
+    name: "Okręg PZW w Tarnobrzegu",
+    prefix: "TBGA_"
+  }
 ];
 
 const CreateUser = () => {
@@ -21,29 +29,44 @@ const CreateUser = () => {
         setStatus("");
 
         if (!emailNo) {
-            setStatus("Podaj nr do loginu użytkownika.");
-            return;
-        }
-        if (!displayName) {
-            setStatus("Podaj imię i nazwisko użytkownika.");
+            setStatus("Podaj nr lub zakres loginów użytkowników.");
             return;
         }
 
         setLoading(true);
 
-        const userEmail = `MAZSSR_${emailNo}@ranger.pl`;
         const assocObj = associationOptions.find(opt => opt.id === association);
         const associationName = assocObj ? assocObj.name : "";
         const associationId = assocObj ? assocObj.id : "";
+        const basePattern = assocObj ? assocObj.prefix : "TEST_";
 
         try {
             const apiUrl = process.env.REACT_APP_API_URL;
+
+            // multiple users support
+            let emailIds = [];
+            if (emailNo.includes("-")) {
+                // preserve leading zeros
+                const [start, end] = emailNo.split("-").map(n => n.trim());
+                const startNum = parseInt(start, 10);
+                const endNum = parseInt(end, 10);
+                const padLength = start.length; 
+
+                emailIds = Array.from({ length: endNum - startNum + 1 }, (_, i) =>
+                    String(startNum + i).padStart(padLength, "0")
+                );
+            } else if (emailNo.includes(",")) {
+                emailIds = emailNo.split(",").map(n => n.trim());
+            } else {
+                emailIds = [emailNo];
+            }
+
             const res = await fetch(`${apiUrl}/create-users`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    basePattern: "MAZSSR_",
-                    emailId: emailNo, 
+                    basePattern,
+                    emailIds,
                     appVersion: "1.0.0",
                     associationId,
                     associationName
@@ -56,23 +79,42 @@ const CreateUser = () => {
                 throw new Error(data.error || "Błąd backendu");
             }
 
-            // Save log in Firestore (client side, as before)
+            // Save log in Firestore
             const adminEmail = auth.currentUser?.email || "brak";
-            await setDoc(doc(collection(db, "user_mngmnt_logs")), {
-                date: serverTimestamp(),
-                action: "create",
-                admin: adminEmail,
-                user: userEmail
-            });
+            for (const user of data.users) {
+                if (user.skipped) {
+                    console.warn(`⚠️ Pominięto duplikat: ${user.email}`);
+                    continue;
+                }
+                await setDoc(doc(collection(db, "user_mngmnt_logs")), {
+                    date: serverTimestamp(),
+                    action: "create",
+                    admin: adminEmail,
+                    user: user.email
+                });
+            }
 
-            setStatus(`✅ Użytkownik został dodany. Email: ${data.users[0].email}, Hasło: ${data.users[0].password}`);
+            // Build status message
+            const successMsgs = data.users
+                .filter(u => !u.skipped && !u.error)
+                .map(u => `✅ ${u.email}, hasło: ${u.password}`);
+
+            const skippedMsgs = data.users
+                .filter(u => u.skipped)
+                .map(u => `⚠️ Duplikat pominięty: ${u.email}`);
+
+            const errorMsgs = data.users
+                .filter(u => u.error)
+                .map(u => `❌ Błąd przy ${u.email}: ${u.error}`);
+
+            setStatus([...successMsgs, ...skippedMsgs, ...errorMsgs].join("\n"));
             setEmailNo("");
             setDisplayName("");
             setAssociation(associationOptions[0].id);
 
         } catch (err) {
             console.error(err);
-            setStatus("❌ Błąd podczas dodawania użytkownika.");
+            setStatus("❌ Błąd podczas dodawania użytkowników.");
         }
 
         setLoading(false);
@@ -102,7 +144,7 @@ const CreateUser = () => {
                         style={{marginLeft: 8, width: 250}}
                     />
                 </label>
-                {/* <label>
+                <label>
                     Okręg:
                     <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
                             style={{marginLeft: 8, width: 420}}>
@@ -110,12 +152,12 @@ const CreateUser = () => {
                             <option key={opt.id} value={opt.id}>{opt.name}</option>
                         ))}
                     </select>
-                </label> */}
+                </label>
                 <button className="default-btn" type="submit" disabled={loading} 
                             style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
             </form>
             {loading && <div style={{ color: "#246928", marginTop: 8 }}>Dodawanie użytkownika...</div>}
-            {status && <div style={{ color: status.includes("dodany") ? "green" : "red", marginTop: 8 }}>{status}</div>}
+            {status && <div style={{ color: status.includes("✅") ? "green" : "red", marginTop: 8 }}>{status}</div>}
         </div>
     );
 };
@@ -202,7 +244,7 @@ const DeleteUser = () => {
                 </button>
             </div>
             {loading && <div style={{ color: "#246928", marginBottom: 8 }}>Wyszukiwanie użytkownika...</div>}
-            {status && <div style={{ color: status.includes("poprawnie") ? "green" : "red" }}>{status}</div>}
+            {status && <div style={{ color: status.includes("✅") ? "green" : "red" }}>{status}</div>}
         </div>
     );
 };
