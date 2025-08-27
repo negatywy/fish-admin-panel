@@ -1,17 +1,5 @@
 const admin = require('firebase-admin');
 const crypto = require('crypto');
-const fs = require('fs');
-
-var serviceAccount = require("./thefish.json");
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
-}
-
-const db = admin.firestore();
-
 function generateRandomPassword(length = 12) {
   return crypto.randomBytes(length).toString('base64').slice(0, length);
 }
