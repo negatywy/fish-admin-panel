@@ -14,14 +14,14 @@ app.post('/create-users', async (req, res) => {
   const { basePattern, emailIds, appVersion, associationId, associationName } = req.body;
 
   try {
-    const user = await createUsersWithPattern(
+    const users = await createUsersWithPattern(
       basePattern,
       emailIds,
       appVersion,
       associationId,
       associationName
     );
-    res.json({ success: true, users: [user] });
+    res.json({ success: true, users });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: error.message });

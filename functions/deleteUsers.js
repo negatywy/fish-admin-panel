@@ -2,6 +2,7 @@ const admin = require("firebase-admin");
 
 async function deleteUsers(emails) {
   const results = [];
+  const db = admin.firestore();
 
   for (const email of emails) {
     try {
@@ -20,7 +21,7 @@ async function deleteUsers(emails) {
     }
   }
 
-  return results; // 🔹 always an array
+  return results;
 }
 
 module.exports = { deleteUsers };

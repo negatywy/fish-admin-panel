@@ -196,8 +196,8 @@ const DeleteUser = () => {
                     const endNum = parseInt(end, 10);
 
                     for (let i = startNum; i <= endNum; i++) {
-                        // 🔹 Use i directly without padStart
-                        emails.push(`${deletePrefix}${i}@ranger.pl`);
+                        const width = start.length; // preserve padding
+                        emails.push(`${deletePrefix}${String(i).padStart(width, "0")}@ranger.pl`);
                     }
                 } else {
                     // 🔹 Use input as-is
