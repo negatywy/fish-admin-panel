@@ -10,12 +10,11 @@ const cors = require('cors');
 app.use(cors());
 
 app.post('/create-users', async (req, res) => {
-  const { basePattern, emailIds, appVersion, associationId, associationName } = req.body;
+  const { count, appVersion, associationId, associationName } = req.body;
 
   try {
     const users = await createUsersWithPattern(
-      basePattern,
-      emailIds,
+      count,
       appVersion,
       associationId,
       associationName

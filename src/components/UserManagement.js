@@ -13,13 +13,12 @@ const associationOptions = [
   {
     id: "hpAlqBYPhqCdlSJVc9RG",
     name: "Okręg PZW w Tarnobrzegu",
-    prefix: "TBGA_"
+    prefix: "TBGSSR_"
   }
 ];
 
 const CreateUser = () => {
-    const [emailNo, setEmailNo] = useState("");
-    const [displayName, setDisplayName] = useState("");
+    const [count, setCount] = useState("");
     const [association, setAssociation] = useState(associationOptions[0].id);
     const [status, setStatus] = useState("");
     const [loading, setLoading] = useState(false);
@@ -28,8 +27,8 @@ const CreateUser = () => {
         e.preventDefault();
         setStatus("");
 
-        if (!emailNo) {
-            setStatus("Podaj nr lub zakres loginów użytkowników.");
+        if (!count || isNaN(count) || parseInt(count, 10) <= 0) {
+            setStatus("Podaj poprawną liczbę użytkowników do utworzenia.");
             return;
         }
 
@@ -38,35 +37,15 @@ const CreateUser = () => {
         const assocObj = associationOptions.find(opt => opt.id === association);
         const associationName = assocObj ? assocObj.name : "";
         const associationId = assocObj ? assocObj.id : "";
-        const basePattern = assocObj ? assocObj.prefix : "TEST_";
 
         try {
             const apiUrl = process.env.REACT_APP_API_URL;
-
-            // multiple users support
-            let emailIds = [];
-            if (emailNo.includes("-")) {
-                // preserve leading zeros
-                const [start, end] = emailNo.split("-").map(n => n.trim());
-                const startNum = parseInt(start, 10);
-                const endNum = parseInt(end, 10);
-                const padLength = start.length; 
-
-                emailIds = Array.from({ length: endNum - startNum + 1 }, (_, i) =>
-                    String(startNum + i).padStart(padLength, "0")
-                );
-            } else if (emailNo.includes(",")) {
-                emailIds = emailNo.split(",").map(n => n.trim());
-            } else {
-                emailIds = [emailNo];
-            }
 
             const res = await fetch(`${apiUrl}/create-users`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    basePattern,
-                    emailIds,
+                    count: parseInt(count, 10),
                     appVersion: "1.0.0",
                     associationId,
                     associationName
@@ -108,8 +87,7 @@ const CreateUser = () => {
                 .map(u => `❌ Błąd przy ${u.email}: ${u.error}`);
 
             setStatus([...successMsgs, ...skippedMsgs, ...errorMsgs].join("\n"));
-            setEmailNo("");
-            setDisplayName("");
+            setCount("");
             setAssociation(associationOptions[0].id);
 
         } catch (err) {
@@ -122,42 +100,45 @@ const CreateUser = () => {
 
     return (
         <div>
-            <h2>Tworzenie nowego użytkownika</h2>
-            <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 12}}>
+            <h2>Tworzenie nowych użytkowników</h2>
+            <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <label>
-                    Login: 
-                        <input
-                            type="text"
-                            value={emailNo}
-                            onChange={e => setEmailNo(e.target.value)}
-                            disabled={loading}
-                            style={{marginLeft: 8, width: 150}}
-                        />
-                </label>
-                <label>
-                    Imię i nazwisko:
+                    Liczba użytkowników:
                     <input
-                        type="text"
-                        value={displayName}
-                        onChange={e => setDisplayName(e.target.value)}
+                        type="number"
+                        min="1"
+                        value={count}
+                        onChange={e => setCount(e.target.value)}
                         disabled={loading}
-                        style={{marginLeft: 8, width: 250}}
+                        style={{ marginLeft: 8, width: 150 }}
                     />
                 </label>
                 <label>
                     Okręg:
-                    <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
-                            style={{marginLeft: 8, width: 420}}>
+                    <select
+                        value={association}
+                        onChange={e => setAssociation(e.target.value)}
+                        disabled={loading}
+                        style={{ marginLeft: 8, width: 420 }}
+                    >
                         {associationOptions.map(opt => (
                             <option key={opt.id} value={opt.id}>{opt.name}</option>
                         ))}
                     </select>
                 </label>
-                <button className="default-btn" type="submit" disabled={loading} 
-                            style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
+                <button
+                    className="default-btn"
+                    type="submit"
+                    disabled={loading}
+                    style={{ marginTop: 8, width: 480 }}
+                >
+                    Dodaj użytkowników
+                </button>
             </form>
-            {loading && <div style={{ color: "#246928", marginTop: 8 }}>Dodawanie użytkownika...</div>}
-            {status && <div style={{ color: status.includes("✅") ? "green" : "red", marginTop: 8 }}>{status}</div>}
+            {loading && <div style={{ color: "#246928", marginTop: 8 }}>Dodawanie użytkowników...</div>}
+            {status && <pre style={{ color: status.includes("✅") ? "green" : "red", marginTop: 8, whiteSpace: "pre-wrap" }}>
+                {status}
+            </pre>}
         </div>
     );
 };
