@@ -13,7 +13,7 @@ const prefixMap = {
 /**
  * Find the highest number used for a given prefix in "users" collection
  */
-async function getHighestNumberForPrefix(prefix) {
+async function getHighestNumberForPrefix(db, prefix) {
   const snapshot = await db
     .collection("users")
     .where("email", ">=", prefix)
@@ -45,9 +45,10 @@ async function createUsersWithPattern(
     const db = admin.firestore();
     const domain = "ranger.pl";
     const enforcedPrefix = prefixMap[associationId] || "MAZSSR_";
+    const createdUsers = [];
 
     // find the last number already used
-  let startNum = await getHighestNumberForPrefix(enforcedPrefix);
+  let startNum = await getHighestNumberForPrefix(db, enforcedPrefix);
   console.log(`ℹ️ Highest existing number for ${enforcedPrefix} is ${startNum}`);
 
   for (let i = 1; i <= count; i++) {
