@@ -22,7 +22,6 @@ export const DataTable = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                console.log("Łączenie z Firestore...");
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
 
                 const user = auth.currentUser;
@@ -87,7 +86,6 @@ export const DataTable = () => {
                 const filteredItems = items.filter(item => item.association_name === regionName);
                 const sortedItems = filteredItems.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
 
-                console.log("Przetworzone dane (posortowane):", sortedItems);
                 setData(sortedItems);
                 setFilteredData(sortedItems);
             } catch (error) {

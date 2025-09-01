@@ -90,7 +90,7 @@ export const ControlMap = () => {
                             association_name: data.association_name ?? null,
                             controller_name: rangerName,
                             controller_id: controllerId ?? null,
-                            controller_email: email.split("@")[0],
+                            controller_email: email ? (email.includes("@") ? email.split("@")[0] : email) : "Brak e-maila",
                             lat: data.position.latitude,
                             lng: data.position.longitude,
                             is_success: data.is_success ?? false,
