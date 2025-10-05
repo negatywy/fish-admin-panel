@@ -36,9 +36,11 @@ export const ControlMap = () => {
     const [points, setPoints] = useState([]);
     const [filteredPoints, setFilteredPoints] = useState([]);
     const [mapCenter, setMapCenter] = useState([52.4461, 21.0302]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchPoints = async () => {
+            setLoading(true);
             try {
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
 
@@ -90,7 +92,7 @@ export const ControlMap = () => {
                             association_name: data.association_name ?? null,
                             controller_name: rangerName,
                             controller_id: controllerId ?? null,
-                            controller_email: email.split("@")[0],
+                            controller_email: email ? email.split("@")[0] : "Brak e-maila",
                             lat: data.position.latitude,
                             lng: data.position.longitude,
                             is_success: data.is_success ?? false,
@@ -104,6 +106,7 @@ export const ControlMap = () => {
             } catch (error) {
                 console.error("Error fetching map data:", error);
             }
+            setLoading(false);
         };
 
         fetchPoints();
@@ -137,7 +140,6 @@ export const ControlMap = () => {
 
         setFilteredPoints(filtered);
     }, [dateFilter, clubFilter, statusFilter, points]);
-
     return (
         <div>
             <Filters 
@@ -151,33 +153,40 @@ export const ControlMap = () => {
                 style={{ margin: "10px 0" }}
                 showDownloadButton={false}
             />
-            <MapContainer 
-                center={mapCenter} 
-                zoom={10} 
-                style={{ height: "calc(90vh - 20px)", width: "100%" }}
-                className="map-container"
-            >
-                <SetMapCenter center={mapCenter} />
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-                />
-                {filteredPoints.map(point => (
-                    <Marker 
-                        key={point.id} 
-                        position={[point.lat, point.lng]} 
-                        icon={point.is_success ? defaultIcon : redIcon} 
-                    >
-                        <Popup>
-                            <strong>{point.is_success ? "✅ OK" : "❌ Wykroczenia"}</strong><br />
-                            {point.control_date ? point.control_date.toLocaleString() : "No control date"}<br />
-                            <strong>Zezwolenie: </strong>{point.license_number ? `${point.license_number}` : "Brak"}<br />
-                            <strong>Strażnik: </strong>{point.controller_name ? `${point.controller_name}` : "Brak"}<br />
-                            <strong>ID: </strong>{point.controller_email ? `${point.controller_email}` : "Brak"}
-                        </Popup>
-                    </Marker>
-                ))}
-            </MapContainer>
+            {loading ? (
+                <div className="spinner" style={{ flexDirection: "column" }}>
+                    <div className="spinner-circle"></div>
+                    <div style={{ marginTop: 16, color: "#246928", fontWeight: 600, fontSize: 18 }}>ładowanie...</div>
+                </div>
+            ) : (
+                <MapContainer 
+                    center={mapCenter} 
+                    zoom={10} 
+                    style={{ height: "calc(90vh - 20px)", width: "100%" }}
+                    className="map-container"
+                >
+                    <SetMapCenter center={mapCenter} />
+                    <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+                    />
+                    {filteredPoints.map(point => (
+                        <Marker 
+                            key={point.id} 
+                            position={[point.lat, point.lng]} 
+                            icon={point.is_success ? defaultIcon : redIcon} 
+                        >
+                            <Popup>
+                                <strong>{point.is_success ? "✅ OK" : "❌ Wykroczenia"}</strong><br />
+                                {point.control_date ? point.control_date.toLocaleString() : "No control date"}<br />
+                                <strong>Zezwolenie: </strong>{point.license_number ? `${point.license_number}` : "Brak"}<br />
+                                <strong>Strażnik: </strong>{point.controller_name ? `${point.controller_name}` : "Brak"}<br />
+                                <strong>ID: </strong>{point.controller_email ? `${point.controller_email}` : "Brak"}
+                            </Popup>
+                        </Marker>
+                    ))}
+                </MapContainer>
+            )}
         </div>
     );
-};
+}
