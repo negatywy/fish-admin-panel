@@ -5,8 +5,16 @@ import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { auth } from "../config/firebase";
 
 const associationOptions = [
-    { id: "GMUe0Hd56WJ7U0HQ3qpa", name: "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie" },
-    { id: "hpAlqBYPhqCdlSJVc9RG", name: "Okręg PZW w Tarnobrzegu" },
+  {
+    id: "GMUe0Hd56WJ7U0HQ3qpa",
+    name: "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie",
+    prefix: "MAZSSR_"
+  },
+  {
+    id: "hpAlqBYPhqCdlSJVc9RG",
+    name: "Okręg PZW w Tarnobrzegu",
+    prefix: "TBGA_"
+  }
 ];
 
 const CreateUser = () => {
@@ -21,29 +29,44 @@ const CreateUser = () => {
         setStatus("");
 
         if (!emailNo) {
-            setStatus("Podaj nr do loginu użytkownika.");
-            return;
-        }
-        if (!displayName) {
-            setStatus("Podaj imię i nazwisko użytkownika.");
+            setStatus("Podaj nr lub zakres loginów użytkowników.");
             return;
         }
 
         setLoading(true);
 
-        const userEmail = `MAZSSR_${emailNo}@ranger.pl`;
         const assocObj = associationOptions.find(opt => opt.id === association);
         const associationName = assocObj ? assocObj.name : "";
         const associationId = assocObj ? assocObj.id : "";
+        const basePattern = assocObj ? assocObj.prefix : "TEST_";
 
         try {
             const apiUrl = process.env.REACT_APP_API_URL;
+
+            // multiple users support
+            let emailIds = [];
+            if (emailNo.includes("-")) {
+                // preserve leading zeros
+                const [start, end] = emailNo.split("-").map(n => n.trim());
+                const startNum = parseInt(start, 10);
+                const endNum = parseInt(end, 10);
+                const padLength = start.length; 
+
+                emailIds = Array.from({ length: endNum - startNum + 1 }, (_, i) =>
+                    String(startNum + i).padStart(padLength, "0")
+                );
+            } else if (emailNo.includes(",")) {
+                emailIds = emailNo.split(",").map(n => n.trim());
+            } else {
+                emailIds = [emailNo];
+            }
+
             const res = await fetch(`${apiUrl}/create-users`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    basePattern: "MAZSSR_",
-                    emailId: emailNo, 
+                    basePattern,
+                    emailIds,
                     appVersion: "1.0.0",
                     associationId,
                     associationName
@@ -56,23 +79,42 @@ const CreateUser = () => {
                 throw new Error(data.error || "Błąd backendu");
             }
 
-            // Save log in Firestore (client side, as before)
+            // Save log in Firestore
             const adminEmail = auth.currentUser?.email || "brak";
-            await setDoc(doc(collection(db, "user_mngmnt_logs")), {
-                date: serverTimestamp(),
-                action: "create",
-                admin: adminEmail,
-                user: userEmail
-            });
+            for (const user of data.users) {
+                if (user.skipped) {
+                    console.warn(`⚠️ Pominięto duplikat: ${user.email}`);
+                    continue;
+                }
+                await setDoc(doc(collection(db, "user_mngmnt_logs")), {
+                    date: serverTimestamp(),
+                    action: "create",
+                    admin: adminEmail,
+                    user: user.email
+                });
+            }
 
-            setStatus(`✅ Użytkownik został dodany. Email: ${data.users[0].email}, Hasło: ${data.users[0].password}`);
+            // Build status message
+            const successMsgs = data.users
+                .filter(u => !u.skipped && !u.error)
+                .map(u => `✅ ${u.email}, hasło: ${u.password}`);
+
+            const skippedMsgs = data.users
+                .filter(u => u.skipped)
+                .map(u => `⚠️ Duplikat pominięty: ${u.email}`);
+
+            const errorMsgs = data.users
+                .filter(u => u.error)
+                .map(u => `❌ Błąd przy ${u.email}: ${u.error}`);
+
+            setStatus([...successMsgs, ...skippedMsgs, ...errorMsgs].join("\n"));
             setEmailNo("");
             setDisplayName("");
             setAssociation(associationOptions[0].id);
 
         } catch (err) {
             console.error(err);
-            setStatus("❌ Błąd podczas dodawania użytkownika.");
+            setStatus("❌ Błąd podczas dodawania użytkowników.");
         }
 
         setLoading(false);
@@ -102,7 +144,7 @@ const CreateUser = () => {
                         style={{marginLeft: 8, width: 250}}
                     />
                 </label>
-                {/* <label>
+                <label>
                     Okręg:
                     <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
                             style={{marginLeft: 8, width: 420}}>
@@ -110,12 +152,12 @@ const CreateUser = () => {
                             <option key={opt.id} value={opt.id}>{opt.name}</option>
                         ))}
                     </select>
-                </label> */}
+                </label>
                 <button className="default-btn" type="submit" disabled={loading} 
                             style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
             </form>
             {loading && <div style={{ color: "#246928", marginTop: 8 }}>Dodawanie użytkownika...</div>}
-            {status && <div style={{ color: status.includes("dodany") ? "green" : "red", marginTop: 8 }}>{status}</div>}
+            {status && <div style={{ color: status.includes("✅") ? "green" : "red", marginTop: 8 }}>{status}</div>}
         </div>
     );
 };
@@ -124,85 +166,122 @@ const DeleteUser = () => {
     const [login, setLogin] = useState("");
     const [status, setStatus] = useState("");
     const [loading, setLoading] = useState(false);
+    const [deletePrefix, setDeletePrefix] = useState("MAZSSR_"); // default
 
     const handleDelete = async () => {
         setStatus("");
         if (!login) {
-            setStatus("Podaj login użytkownika.");
+            setStatus("Podaj login/y użytkownika.");
             return;
         }
-        setLoading(true); 
-        const email = login.includes("@") ? login : `${login}@ranger.pl`;
 
-        const password = window.prompt("Aby usunąć użytkownika, wpisz hasło bezpieczeństwa:");
+        setLoading(true);
+
+        const password = window.prompt("Aby usunąć użytkowników, wpisz hasło bezpieczeństwa:");
         if (password !== "DeleteIt") {
             setStatus("Niepoprawne hasło. Operacja anulowana.");
             setLoading(false);
             return;
         }
 
-        const confirm = window.confirm(`Czy na pewno chcesz usunąć użytkownika o loginie: ${email}?`);
-        if (!confirm) {
-            setStatus("Usuwanie anulowane.");
-            setLoading(false);
-            return;
-        }
-
         try {
+            // Parse input: ranges, comma-separated, or single
+            const parts = login.split(",").map(p => p.trim());
+            let emails = [];
+
+            for (const part of parts) {
+                if (part.includes("-")) {
+                    const [start, end] = part.split("-").map(p => p.trim());
+                    const startNum = parseInt(start, 10);
+                    const endNum = parseInt(end, 10);
+
+                    for (let i = startNum; i <= endNum; i++) {
+                        const width = start.length; // preserve padding
+                        emails.push(`${deletePrefix}${String(i).padStart(width, "0")}@ranger.pl`);
+                    }
+                } else {
+                    // 🔹 Use input as-is
+                    emails.push(`${deletePrefix}${part}@ranger.pl`);
+                }
+            }
+
+            const confirm = window.confirm(`Czy na pewno chcesz usunąć użytkowników:\n${emails.join("\n")}?`);
+            if (!confirm) {
+                setStatus("Usuwanie anulowane.");
+                setLoading(false);
+                return;
+            }
+
             const apiUrl = process.env.REACT_APP_API_URL;
-            const res = await fetch(`${apiUrl}/delete-user`, {
+            const res = await fetch(`${apiUrl}/delete-users`, { // 🔹 call batch route
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ emails }),
             });
 
             const data = await res.json();
 
-            if (data.success) {
-                setStatus(`✅ Użytkownik ${email} został poprawnie usunięty.`);
-            } else {
-                setStatus(`⚠️ Nie można usunąć użytkownika: ${data.message}`);
+            if (!data.success) {
+                throw new Error(data.error || "Błąd backendu");
             }
 
-            // Save log in Firestore
+            // Save logs for each user
             const adminEmail = auth.currentUser?.email || "brak";
-            await setDoc(doc(collection(db, "user_mngmnt_logs")), {
-                date: serverTimestamp(),
-                action: "delete",
-                admin: adminEmail,
-                user: email
-            });
+            for (const result of data.results) {
+                await setDoc(doc(collection(db, "user_mngmnt_logs")), {
+                    date: serverTimestamp(),
+                    action: "delete",
+                    admin: adminEmail,
+                    user: result.email,
+                    success: result.success
+                });
+            }
+
+            // Build status message
+            const successMsgs = data.results.filter(r => r.success).map(r => `✅ ${r.email}`);
+            const failMsgs = data.results.filter(r => !r.success).map(r => `❌ ${r.email}: ${r.message}`);
+
+            setStatus([...successMsgs, ...failMsgs].join("\n"));
 
         } catch (err) {
             console.error(err);
-            setStatus("❌ Błąd podczas usuwania użytkownika.");
+            setStatus("❌ Błąd podczas usuwania użytkowników.");
         }
 
         setLoading(false);
-    };
+        };
 
     return (
         <div>
             <h2>Usuwanie użytkownika</h2>
             <div style={{ marginBottom: 10 }}>
+                <p><label style={{ marginRight: 7 }}>Prefiks:</label>
+                <select
+                    value={deletePrefix}
+                    onChange={(e) => setDeletePrefix(e.target.value)}
+                >
+                    {associationOptions.map(opt => (
+                        <option key={opt.id} value={opt.prefix}>{opt.prefix}</option>
+                    ))}
+                </select></p>
+                <p><label style={{ marginRight: 7 }}>Loginy do usunięcia (np. 0001, 0002-0005):</label>
                 <input
                     type="text"
-                    placeholder="Login użytkownika"
                     value={login}
-                    onChange={e => setLogin(e.target.value)}
-                    disabled={loading}
-                />
+                    onChange={(e) => setLogin(e.target.value)}
+                    placeholder="np. 0001, 0002-0005"
+                /></p>
                 <button
                     className="default-btn"
                     onClick={handleDelete}
-                    style={{ marginLeft: 8 }}
+                    style={{ width: 480 }}
                     disabled={loading}
                 >
-                    Usuń
+                    Usuń użytkowników
                 </button>
             </div>
             {loading && <div style={{ color: "#246928", marginBottom: 8 }}>Wyszukiwanie użytkownika...</div>}
-            {status && <div style={{ color: status.includes("poprawnie") ? "green" : "red" }}>{status}</div>}
+            {status && <div style={{ color: status.includes("✅") ? "green" : "red" }}>{status}</div>}
         </div>
     );
 };

@@ -74,6 +74,7 @@ export const DataTable = () => {
                             controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
                             controller_id: controllerId,
                             controller_email: email ? email.split("@")[0] : "Brak e-maila",
+                            group_code: data.group_code ?? null,
                             license_number: data.extractedLicenseNumber ?? null,
                             latitude: data.position?.latitude ?? null,
                             longitude: data.position?.longitude ?? null,
@@ -184,6 +185,7 @@ export const DataTable = () => {
             "Data kontroli": item.control_date ? item.control_date.toLocaleString() : null,
             "Strażnik": item.controller_name ? item.controller_name : null, // `Strażnik ${index + 1}`
             "ID Strażnika": item.controller_email ? item.controller_email.split("@")[0] : null,
+            "Kod grupy": item.group_code ? item.group_code : null,
             "Zezwolenie": item.license_number ? item.license_number : null,
             "Koło": item.association_club_name ? item.association_club_name : null,
             "Szerokość geograficzna": item.latitude ? item.latitude : null,
@@ -228,6 +230,7 @@ export const DataTable = () => {
                             <th>Data kontroli</th>
                             <th>Strażnik</th>
                             <th>ID Strażnika</th>
+                            <th>Kod grupy</th>
                             <th>Zezwolenie</th>
                             <th>Koło</th>
                             <th>Pozycja</th>
@@ -241,6 +244,7 @@ export const DataTable = () => {
                                 <td>{item.control_date ? item.control_date.toLocaleString() : "Brak"}</td>
                                 <td>{item.controller_name}</td>
                                 <td>{item.controller_email}</td>
+                                <td>{item.group_code}</td>
                                 <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
                                 <td>{item.latitude != null && item.longitude != null ? (

@@ -11,31 +11,34 @@ app.use(cors());
 app.use(express.json());
 
 app.post('/create-users', async (req, res) => {
-  const { basePattern, emailId, appVersion, associationId, associationName } = req.body;
+  const { basePattern, emailIds, appVersion, associationId, associationName } = req.body;
 
   try {
-    const user = await createUsersWithPattern(
+    const users = await createUsersWithPattern(
       basePattern,
-      emailId,
+      emailIds,
       appVersion,
       associationId,
       associationName
     );
-    res.json({ success: true, users: [user] });
+    res.json({ success: true, users });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.post("/delete-user", async (req, res) => {
-  const { email } = req.body;
+app.post("/delete-users", async (req, res) => {
+  const { emails } = req.body; // must be an array
+  if (!emails || !Array.isArray(emails)) {
+    return res.status(400).json({ success: false, error: "emails must be an array" });
+  }
 
   try {
-    await deleteUsers(email);
-    res.json({ success: true, email });
+    const results = await deleteUsers(emails);
+    res.json({ success: true, results }); // 🔹 always returns array
   } catch (err) {
-    console.error("Error deleting user:", err);
+    console.error("Batch deletion error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

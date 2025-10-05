@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, getDoc, doc } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { db, auth } from "../config/firebase";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import "../style/App.css";
-import { auth } from "../config/firebase";
-
-/* QUERY DO SZUKANIA RANGERÓW
-
-.collection("users")
-.where("roles", "array-contains", "ranger") */
 
 export const RangerStats = () => {
     const [stats, setStats] = useState([]);
@@ -47,7 +41,6 @@ export const RangerStats = () => {
                 const currentYear = now.getFullYear();
                 const rangerData = {};
                 let rangerCounter = 1;
-                const rangerMapping = {};
 
                 await Promise.all(querySnapshot.docs.map(async (document) => {
                     const data = document.data();
@@ -72,29 +65,31 @@ export const RangerStats = () => {
                     if (!controlDate || controlDate.getFullYear() !== currentYear) return; 
                     if (regionName !== "all" && data.association_name !== regionName) return;
 
-                    if (!(ranger in rangerMapping)) {
-                        rangerMapping[ranger] = `Strażnik ${rangerCounter++}`;
-                    }
-
                     if (!rangerData[ranger]) {
                         rangerData[ranger] = {
                             name: ranger,
                             email: email ? email.split("@")[0] : "Brak e-maila",
-                            controlResults: [], // dodajemy tablicę obiektów {date, isSuccess}
+                            controlResults: [], // obiekty {date, isSuccess, group_code}
                         };
                     }
 
-                    rangerData[ranger].controlResults.push({ date: controlDate, isSuccess });
+                    rangerData[ranger].controlResults.push({ date: controlDate, isSuccess, group_code: data.group_code ?? "" });
                 }));
 
-                // Przelicz statystyki dla każdego strażnika
                 const formattedStats = Object.values(rangerData).map(ranger => {
                     const totalControls = ranger.controlResults.length;
                     const successfulControls = ranger.controlResults.filter(res => res.isSuccess).length;
                     const rejectedControls = totalControls - successfulControls;
                     const controlDates = ranger.controlResults.map(res => res.date);
-                    // Liczba patroli: unikalne dni z jakimkolwiek zapisem
+
                     const patrolDays = new Set(controlDates.map(date => date ? date.toISOString().slice(0, 10) : null)).size;
+
+                    const groupPatrolDays = new Set(
+                        ranger.controlResults
+                            .filter(res => res.group_code?.startsWith("GRUPA_"))
+                            .map(res => res.date ? res.date.toISOString().slice(0, 10) : null)
+                    ).size;
+
                     return {
                         ...ranger,
                         totalControls,
@@ -102,9 +97,11 @@ export const RangerStats = () => {
                         rejectedControls,
                         controlDates,
                         patrolDays,
+                        groupPatrolDays,
                         controlResults: ranger.controlResults
                     };
                 });
+
                 setStats(formattedStats);
                 setFilteredStats(formattedStats);
             } catch (error) {
@@ -119,7 +116,6 @@ export const RangerStats = () => {
     useEffect(() => {
         const filterStats = () => {
             if (dateFilter === "all") {
-                // Pokazuj pełne statystyki
                 setFilteredStats(stats);
                 setCurrentPage(1);
                 return;
@@ -134,7 +130,6 @@ export const RangerStats = () => {
                 cutoffDate.setMonth(now.getMonth() - 1);
             }
 
-            // Przefiltruj statystyki tylko dla wybranego zakresu dat
             const filtered = stats
                 .map(ranger => {
                     const filteredResults = ranger.controlResults.filter(res => res.date >= cutoffDate);
@@ -143,6 +138,12 @@ export const RangerStats = () => {
                     const rejectedControls = totalControls - successfulControls;
                     const controlDates = filteredResults.map(res => res.date);
                     const patrolDays = new Set(controlDates.map(date => date ? date.toISOString().slice(0, 10) : null)).size;
+                    const groupPatrolDays = new Set(
+                        filteredResults
+                            .filter(res => res.group_code?.startsWith("GRUPA_"))
+                            .map(res => res.date ? res.date.toISOString().slice(0, 10) : null)
+                    ).size;
+
                     return {
                         ...ranger,
                         totalControls,
@@ -150,6 +151,7 @@ export const RangerStats = () => {
                         rejectedControls,
                         controlDates,
                         patrolDays,
+                        groupPatrolDays,
                         controlResults: filteredResults
                     };
                 })
@@ -182,8 +184,9 @@ export const RangerStats = () => {
 
         const csvData = filteredStats.map(ranger => ({
             "Strażnik": ranger.name,
-            "ID Strażnika": ranger.email.split("@")[0],
+            "ID Strażnika": ranger.email,
             "Liczba patroli": ranger.patrolDays,
+            "Patrole grupowe": ranger.groupPatrolDays,
             "Liczba kontroli": ranger.totalControls,
             "Kontrole pozytywne": ranger.successfulControls,
             "Kontrole negatywne": ranger.rejectedControls
@@ -223,6 +226,7 @@ export const RangerStats = () => {
                             <th>Strażnik</th>
                             <th>ID Strażnika</th>
                             <th>Liczba patroli</th>
+                            <th>Patrole grupowe</th>
                             <th>Liczba kontroli</th>
                             <th>Kontrole pozytywne</th>
                             <th>Wykryte wykroczenia</th>
@@ -234,6 +238,7 @@ export const RangerStats = () => {
                                 <td>{ranger.name}</td>
                                 <td>{ranger.email}</td>
                                 <td>{ranger.patrolDays}</td>
+                                <td>{ranger.groupPatrolDays}</td>
                                 <td>{ranger.totalControls}</td>
                                 <td>{ranger.successfulControls}</td>
                                 <td>{ranger.rejectedControls}</td>
