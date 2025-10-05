@@ -14,102 +14,105 @@ export const RangerStats = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const querySnapshot = await getDocs(collection(db, "ssr_controls"));
-                if (querySnapshot.empty) {
-                    setLoading(false);
-                    return;
-                }
-
-                const user = auth.currentUser;
-                let regionName = "all";
-                switch (user?.email) {
-                    case "admin.ompzw@naturai.pl":
-                        regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
-                        break;
-                    case "admin.tbga@naturai.pl":
-                        regionName = "Okręg PZW w Tarnobrzegu";
-                        break;
-                    default:
-                        regionName = "all";
-                        break;
-                }
-
-                const now = new Date();
-                const currentYear = now.getFullYear();
-                const rangerData = {};
-                let rangerCounter = 1;
-
-                await Promise.all(querySnapshot.docs.map(async (document) => {
-                    const data = document.data();
-                    const ranger = data.controller_name || "Nieznany";
-                    const rangerID = data.controller_id || "Nieznany";
-                    let email = null;
-                    const isSuccess = data.is_success ?? false;
-                    const controlDate = data.control_date?.toDate() ?? null;
-
-                    if (rangerID) {
-                        try {
-                            const userDocRef = doc(db, "users", rangerID);
-                            const userDocSnap = await getDoc(userDocRef);
-                            if (userDocSnap.exists()) {
-                                email = userDocSnap.data().email ?? "Brak e-maila";
-                            }
-                        } catch (error) {
-                            console.error(`Błąd pobierania e-maila dla ID: ${rangerID}`, error);
-                        }
-                    }
-
-                    if (!controlDate || controlDate.getFullYear() !== currentYear) return; 
-                    if (regionName !== "all" && data.association_name !== regionName) return;
-
-                    if (!rangerData[ranger]) {
-                        rangerData[ranger] = {
-                            name: ranger,
-                            email: email ? email.split("@")[0] : "Brak e-maila",
-                            controlResults: [], // obiekty {date, isSuccess, group_code}
-                        };
-                    }
-
-                    rangerData[ranger].controlResults.push({ date: controlDate, isSuccess, group_code: data.group_code ?? "" });
-                }));
-
-                const formattedStats = Object.values(rangerData).map(ranger => {
-                    const totalControls = ranger.controlResults.length;
-                    const successfulControls = ranger.controlResults.filter(res => res.isSuccess).length;
-                    const rejectedControls = totalControls - successfulControls;
-                    const controlDates = ranger.controlResults.map(res => res.date);
-
-                    const patrolDays = new Set(controlDates.map(date => date ? date.toISOString().slice(0, 10) : null)).size;
-
-                    const groupPatrolDays = new Set(
-                        ranger.controlResults
-                            .filter(res => res.group_code?.startsWith("GRUPA_"))
-                            .map(res => res.date ? res.date.toISOString().slice(0, 10) : null)
-                    ).size;
-
-                    return {
-                        ...ranger,
-                        totalControls,
-                        successfulControls,
-                        rejectedControls,
-                        controlDates,
-                        patrolDays,
-                        groupPatrolDays,
-                        controlResults: ranger.controlResults
-                    };
-                });
-
-                setStats(formattedStats);
-                setFilteredStats(formattedStats);
-            } catch (error) {
-                console.error("Error fetching data:", error);
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const querySnapshot = await getDocs(collection(db, "ssr_controls"));
+            if (querySnapshot.empty) {
+                setStats([]);
+                setFilteredStats([]);
+                setLoading(false);
+                return;
             }
-            setLoading(false);
-        };
 
+            const user = auth.currentUser;
+            let regionName = "all";
+            switch (user?.email) {
+                case "admin.ompzw@naturai.pl":
+                    regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
+                    break;
+                case "admin.tbga@naturai.pl":
+                    regionName = "Okręg PZW w Tarnobrzegu";
+                    break;
+                default:
+                    regionName = "all";
+                    break;
+            }
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const rangerData = {};
+
+            await Promise.all(querySnapshot.docs.map(async (document) => {
+                const data = document.data();
+                const ranger = data.controller_name || "Nieznany";
+                const rangerID = data.controller_id || "Nieznany";
+                let email = null;
+                const isSuccess = data.is_success ?? false;
+                const controlDate = data.control_date?.toDate() ?? null;
+
+                if (rangerID) {
+                    try {
+                        const userDocRef = doc(db, "users", rangerID);
+                        const userDocSnap = await getDoc(userDocRef);
+                        if (userDocSnap.exists()) {
+                            email = userDocSnap.data().email ?? "Brak e-maila";
+                        }
+                    } catch (error) {
+                        console.error(`Błąd pobierania e-maila dla ID: ${rangerID}`, error);
+                    }
+                }
+
+                if (!controlDate || controlDate.getFullYear() !== currentYear) return;
+                if (regionName !== "all" && data.association_name !== regionName) return;
+
+                if (!rangerData[ranger]) {
+                    rangerData[ranger] = {
+                        name: ranger,
+                        email: email ? email.split("@")[0] : "Brak e-maila",
+                        controlResults: [],
+                    };
+                }
+
+                rangerData[ranger].controlResults.push({
+                    date: controlDate,
+                    isSuccess,
+                    group_code: data.group_code ?? "",
+                });
+            }));
+
+            const formattedStats = Object.values(rangerData).map((ranger) => {
+                const totalControls = ranger.controlResults.length;
+                const successfulControls = ranger.controlResults.filter((res) => res.isSuccess).length;
+                const rejectedControls = totalControls - successfulControls;
+                const controlDates = ranger.controlResults.map((res) => res.date);
+                const patrolDays = new Set(controlDates.map((d) => d?.toISOString().slice(0, 10))).size;
+                const groupPatrolDays = new Set(
+                    ranger.controlResults
+                        .filter((res) => res.group_code?.startsWith("GRUPA_"))
+                        .map((res) => res.date?.toISOString().slice(0, 10))
+                ).size;
+
+                return {
+                    ...ranger,
+                    totalControls,
+                    successfulControls,
+                    rejectedControls,
+                    controlDates,
+                    patrolDays,
+                    groupPatrolDays,
+                };
+            });
+
+            setStats(formattedStats);
+            setFilteredStats(formattedStats);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
         fetchData();
     }, []);
 
@@ -223,6 +226,7 @@ export const RangerStats = () => {
                     <option value="lastMonth">Ostatni miesiąc</option>
                 </select>
                 <button onClick={downloadCSV} className="default-btn">Pobierz CSV</button>
+                <button onClick={fetchData} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
             </div>
             <div className="table-container">
                 <table>

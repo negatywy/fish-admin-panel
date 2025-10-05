@@ -45,8 +45,16 @@ export const DataTable = () => {
                     const rangerName = data.controller_name ?? "Nieznany";
                     const controllerId = data.controller_id ?? null;
                     let email = null;
-                    if (controllerId) { /* ...existing code... */ }
-                    // ...rest of mapping logic...
+                    if (controllerId) {
+                        try {
+                            const userDoc = await getDoc(doc(db, "users", controllerId));
+                            if (userDoc.exists()) {
+                                email = userDoc.data().email ?? "Brak e-maila";
+                            }
+                        } catch (error) {
+                            console.error(`Błąd pobierania e-maila dla ID: ${controllerId}`, error);
+                        }
+                    }
                     return {
                         id: document.id,
                         control_date: data.control_date?.toDate() ?? null,
@@ -196,7 +204,10 @@ export const DataTable = () => {
 
     return (
         <div>
-            <h1>Historia kontroli</h1>
+            <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
+                <h1 style={{margin: 0}}>Historia kontroli</h1>
+                <button className="default-btn" onClick={fetchData} style={{height: 30}} title="Odśwież dane">Odśwież</button>
+            </div>
             <Filters
                 dateFilter={dateFilter}
                 setDateFilter={setDateFilter}

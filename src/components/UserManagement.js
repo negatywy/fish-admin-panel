@@ -406,7 +406,23 @@ const UserLogs = () => {
 
     return (
         <div>
-            <h2>Logi użytkowników</h2>
+            <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
+                <h2 style={{margin: 0}}>Logi użytkowników</h2>
+                <button className="default-btn" onClick={() => {
+                    setLoading(true);
+                    (async () => {
+                        try {
+                            const querySnapshot = await getDocs(collection(db, "user_mngmnt_logs"));
+                            const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            items.sort((a, b) => (b.date?.toDate?.() || 0) - (a.date?.toDate?.() || 0));
+                            setLogs(items);
+                        } catch (err) {
+                            setError("Błąd pobierania logów użytkowników");
+                        }
+                        setLoading(false);
+                    })();
+                }} title="Odśwież dane">Odśwież</button>
+            </div>
             <div style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <label>Według daty: </label>
