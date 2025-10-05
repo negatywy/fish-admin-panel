@@ -22,7 +22,7 @@ const CreateUser = () => {
     const [displayName, setDisplayName] = useState("");
     const [association, setAssociation] = useState(associationOptions[0].id);
     const [status, setStatus] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -33,7 +33,7 @@ const CreateUser = () => {
             return;
         }
 
-        setLoading(true);
+        setLoading(false);
 
         const assocObj = associationOptions.find(opt => opt.id === association);
         const associationName = assocObj ? assocObj.name : "";
@@ -156,7 +156,12 @@ const CreateUser = () => {
                 <button className="default-btn" type="submit" disabled={loading} 
                             style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
             </form>
-            {loading && <div style={{ color: "#246928", marginTop: 8 }}>Dodawanie użytkownika...</div>}
+            {loading && (
+                <div className="spinner" style={{flexDirection: 'column'}}>
+                    <div className="spinner-circle"></div>
+                    <div style={{marginTop: 16, color: "#246928", fontWeight: 600, fontSize: 18}}>ładowanie...</div>
+                </div>
+            )}
             {status && <div style={{ color: status.includes("✅") ? "green" : "red", marginTop: 8 }}>{status}</div>}
         </div>
     );
@@ -280,7 +285,12 @@ const DeleteUser = () => {
                     Usuń użytkowników
                 </button>
             </div>
-            {loading && <div style={{ color: "#246928", marginBottom: 8 }}>Wyszukiwanie użytkownika...</div>}
+            {loading && (
+                <div className="spinner">
+                    <div className="spinner-circle"></div>
+                    <div style={{marginLeft: 16, color: "#246928"}}>ładowanie...</div>
+                </div>
+            )}
             {status && <div style={{ color: status.includes("✅") ? "green" : "red" }}>{status}</div>}
         </div>
     );
@@ -295,10 +305,12 @@ const UserLogs = () => {
     const [actionFilter, setActionFilter] = useState("");
     const [adminFilter, setAdminFilter] = useState("");
     const [userFilter, setUserFilter] = useState("");
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchLogs = async () => {
             setError(null);
+            setLoading(true);
             try {
                 const querySnapshot = await getDocs(collection(db, "user_mngmnt_logs"));
                 const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -307,6 +319,7 @@ const UserLogs = () => {
             } catch (err) {
                 setError("Błąd pobierania logów użytkowników");
             }
+            setLoading(false);
         };
         fetchLogs();
     }, []);
@@ -359,7 +372,7 @@ const UserLogs = () => {
             return;
         }
         const csvData = filteredLogs.map(log => ({
-            "Data": log.date?.toDate ? log.date.toDate().toLocaleString() : "Brak",
+            "Data": log.date?.toDate ? log.date.toDate().toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak",
             "Akcja": log.action || "-",
             "Admin": log.admin || "-",
             "Użytkownik": log.user || "-"
@@ -380,6 +393,15 @@ const UserLogs = () => {
     const currentRows = filteredLogs.slice(indexOfFirstRow, indexOfLastRow);
     const totalPages = Math.ceil(filteredLogs.length / rowsPerPage);
 
+
+    if (loading) {
+        return (
+            <div className="spinner" style={{flexDirection: 'column'}}>
+                <div className="spinner-circle"></div>
+                <div style={{marginTop: 16, color: "#246928", fontWeight: 600, fontSize: 18}}>ładowanie...</div>
+            </div>
+        );
+    }
     if (error) return <p style={{color: 'red'}}>{error}</p>;
 
     return (
@@ -429,7 +451,7 @@ const UserLogs = () => {
                     <tbody>
                         {currentRows.map(log => (
                             <tr key={log.id}>
-                                <td>{log.date?.toDate ? log.date.toDate().toLocaleString() : "Brak"}</td>
+                                <td>{log.date?.toDate ? log.date.toDate().toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak"}</td>
                                 <td>{log.action || "-"}</td>
                                 <td>{log.admin || "-"}</td>
                                 <td>{log.user || "-"}</td>

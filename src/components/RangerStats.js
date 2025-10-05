@@ -204,7 +204,12 @@ export const RangerStats = () => {
     const totalPages = Math.ceil(filteredStats.length / rowsPerPage);
 
     if (loading) {
-        return <div style={{textAlign: "center", marginTop: 40}}><b>Ładowanie statystyk...</b></div>;
+        return (
+            <div className="spinner" style={{flexDirection: 'column', marginTop: '20%'}}>
+                <div className="spinner-circle"></div>
+                <div style={{marginTop: 16, fontWeight: 600, color: '#246928', fontSize: 18}}>Ładowanie...</div>
+            </div>
+        );
     }
 
     return (

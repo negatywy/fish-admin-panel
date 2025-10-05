@@ -5,12 +5,12 @@ const FilterContext = createContext();
 export const useFilters = () => useContext(FilterContext);
 
 export const FilterProvider = ({ children }) => {
-  const [dateFilter, setDateFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("lastWeek");
   const [clubFilter, setClubFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const resetFilters = () => {
-    setDateFilter("all");
+    setDateFilter("lastWeek");
     setClubFilter("all");
     setStatusFilter("all");
   };

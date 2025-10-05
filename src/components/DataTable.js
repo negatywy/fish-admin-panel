@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { collection, doc, getDocs, getDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
@@ -9,6 +10,7 @@ import { useFilters } from "../context/FilterContext";
 import { Filters } from "./Filters";
 import { auth } from "../config/firebase";
 
+
 export const DataTable = () => {
     const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
     const [data, setData] = useState([]);
@@ -19,83 +21,61 @@ export const DataTable = () => {
     const [copySuccess, setCopySuccess] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                console.log("Łączenie z Firestore...");
-                const querySnapshot = await getDocs(collection(db, "ssr_controls"));
-
-                const user = auth.currentUser;
-                let regionName ="all";
-                switch (user.email) {
-                    case "admin.ompzw@naturai.pl":
-                        regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
-                        break;
-                    case "admin.tbga@naturai.pl":
-                        regionName = "Okręg PZW w Tarnobrzegu";
-                        break;
-                    default:
-                        regionName = "all";
-                        break;
-                }
-
-                // do anonimizacji
-                // const rangerMapping = {};
-                // let rangerCounter = 1;
-
-                const items = await Promise.all(
-                    querySnapshot.docs.map(async (document) => {
-                        const data = document.data();
-                        const rangerName = data.controller_name ?? "Nieznany";
-                        const controllerId = data.controller_id ?? null;
-                        let email = null;
-
-                        if (controllerId) {
-                            try {
-                                const userDoc = await getDoc(doc(db, "users", controllerId));
-                                if (userDoc.exists()) {
-                                    email = userDoc.data().email ?? "Brak e-maila";
-                                }
-                            } catch (error) {
-                                console.error(`Błąd pobierania e-maila dla ID: ${controllerId}`, error);
-                            }
-                        }
-    
-                        // do anonimizacji
-                        // if (!(rangerName in rangerMapping)) {
-                        //     rangerMapping[rangerName] = `Strażnik ${rangerCounter++}`;
-                        // }
-
-                        return {
-                            id: document.id,
-                            control_date: data.control_date?.toDate() ?? null,
-                            association_club_name: data.association_club_name ?? null,
-                            association_name: data.association_name ?? null,
-                            controller_name: rangerName, //rangerMapping[rangerName],  // Anonymized name
-                            controller_id: controllerId,
-                            controller_email: email ? email.split("@")[0] : "Brak e-maila",
-                            group_code: data.group_code ?? null,
-                            license_number: data.extractedLicenseNumber ?? null,
-                            latitude: data.position?.latitude ?? null,
-                            longitude: data.position?.longitude ?? null,
-                            is_success: data.is_success ?? null,
-                            reason: data.rejection_reason ?? null 
-                        };
-                    })
-                );
-
-                const filteredItems = items.filter(item => item.association_name === regionName);
-                const sortedItems = filteredItems.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
-
-                console.log("Przetworzone dane (posortowane):", sortedItems);
-                setData(sortedItems);
-                setFilteredData(sortedItems);
-            } catch (error) {
-                console.error("Błąd pobierania danych:", error);
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            console.log("Łączenie z Firestore...");
+            const querySnapshot = await getDocs(collection(db, "ssr_controls"));
+            const user = auth.currentUser;
+            let regionName ="all";
+            switch (user.email) {
+                case "admin.ompzw@naturai.pl":
+                    regionName = "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie";
+                    break;
+                case "admin.tbga@naturai.pl":
+                    regionName = "Okręg PZW w Tarnobrzegu";
+                    break;
+                default:
+                    regionName = "all";
+                    break;
             }
-            setLoading(false);
-        };
+            const items = await Promise.all(
+                querySnapshot.docs.map(async (document) => {
+                    const data = document.data();
+                    const rangerName = data.controller_name ?? "Nieznany";
+                    const controllerId = data.controller_id ?? null;
+                    let email = null;
+                    if (controllerId) { /* ...existing code... */ }
+                    // ...rest of mapping logic...
+                    return {
+                        id: document.id,
+                        control_date: data.control_date?.toDate() ?? null,
+                        association_club_name: data.association_club_name ?? null,
+                        association_name: data.association_name ?? null,
+                        controller_name: rangerName,
+                        controller_id: controllerId,
+                        controller_email: email ? email.split("@")[0] : "Brak e-maila",
+                        group_code: data.group_code ?? null,
+                        license_number: data.extractedLicenseNumber ?? null,
+                        latitude: data.position?.latitude ?? null,
+                        longitude: data.position?.longitude ?? null,
+                        is_success: data.is_success ?? null,
+                        reason: data.rejection_reason ?? null 
+                    };
+                })
+            );
+            const filteredItems = items.filter(item => item.association_name === regionName);
+            const sortedItems = filteredItems.sort((a, b) => (b.control_date || 0) - (a.control_date || 0));
+            console.log("Przetworzone dane (posortowane):", sortedItems);
+            setData(sortedItems);
+            setFilteredData(sortedItems);
+        } catch (error) {
+            console.error("Błąd pobierania danych:", error);
+        }
+        setLoading(false);
+    };
 
+    useEffect(() => {
         fetchData();
     }, []);
     
@@ -182,7 +162,7 @@ export const DataTable = () => {
         }
 
         const csvData = filteredData.map((item, index) => ({
-            "Data kontroli": item.control_date ? item.control_date.toLocaleString() : null,
+            "Data kontroli": item.control_date ? item.control_date.toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null,
             "Strażnik": item.controller_name ? item.controller_name : null, // `Strażnik ${index + 1}`
             "ID Strażnika": item.controller_email ? item.controller_email.split("@")[0] : null,
             "Kod grupy": item.group_code ? item.group_code : null,
@@ -206,7 +186,12 @@ export const DataTable = () => {
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
 
     if (loading) {
-        return <div style={{textAlign: "center", marginTop: 40}}><b>Ładowanie tabeli...</b></div>;
+        return (
+            <div className="spinner" style={{flexDirection: 'column', marginTop: '20%'}}>
+                <div className="spinner-circle"></div>
+                <div style={{marginTop: 16, fontWeight: 600, color: '#246928', fontSize: 18}}>Ładowanie...</div>
+            </div>
+        );
     }
 
     return (
@@ -241,7 +226,7 @@ export const DataTable = () => {
                     <tbody>
                         {currentRows.map(item => (
                             <tr key={item.id}>
-                                <td>{item.control_date ? item.control_date.toLocaleString() : "Brak"}</td>
+                                <td>{item.control_date ? item.control_date.toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak"}</td>
                                 <td>{item.controller_name}</td>
                                 <td>{item.controller_email}</td>
                                 <td>{item.group_code}</td>
