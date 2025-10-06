@@ -188,10 +188,46 @@ export const DataTable = () => {
         saveAs(blob, `kontrole_${dateFilter}.csv`);
     };
 
+    // Remove duplicates within 15 minutes across all filteredData
+    const roundCoord = (val) => val == null ? null : Math.round(val * 1000) / 1000;
+    const removeDuplicates15Min = (rows) => {
+        const result = [];
+        for (let i = 0; i < rows.length; i++) {
+            const curr = rows[i];
+            const currLat = roundCoord(curr.latitude);
+            const currLng = roundCoord(curr.longitude);
+            // Check if a previous record with the same fields exists within 15 minutes
+            const isDuplicate = result.some(prev => {
+                const prevTime = prev.control_date ? prev.control_date.getTime() : null;
+                const currTime = curr.control_date ? curr.control_date.getTime() : null;
+                const timeDiff = (prevTime !== null && currTime !== null) ? Math.abs(currTime - prevTime) : null;
+                // const prevLat = roundCoord(prev.latitude);
+                // const prevLng = roundCoord(prev.longitude);
+                return (
+                    timeDiff !== null && timeDiff <= 20 * 60 * 1000 &&
+                    prev.controller_name === curr.controller_name &&
+                    prev.controller_email === curr.controller_email &&
+                    prev.group_code === curr.group_code &&
+                    prev.license_number === curr.license_number &&
+                    prev.association_club_name === curr.association_club_name &&
+                    // prevLat === currLat &&
+                    // prevLng === currLng &&
+                    prev.is_success === curr.is_success &&
+                    prev.reason === curr.reason
+                );
+            });
+            if (!isDuplicate) {
+                result.push(curr);
+            }
+        }
+        return result;
+    };
+
+    const dedupedData = removeDuplicates15Min(filteredData);
     const indexOfLastRow = currentPage * rowsPerPage;
     const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-    const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    const currentRows = dedupedData.slice(indexOfFirstRow, indexOfLastRow);
+    const totalPages = Math.ceil(dedupedData.length / rowsPerPage);
 
     if (loading) {
         return (

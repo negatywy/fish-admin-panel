@@ -407,7 +407,7 @@ const UserLogs = () => {
     return (
         <div>
             <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
-                <h2 style={{margin: 0}}>Logi użytkowników</h2>
+                <h2 style={{margin: 7}}>Logi użytkowników</h2>
                 <button className="default-btn" onClick={() => {
                     setLoading(true);
                     (async () => {
