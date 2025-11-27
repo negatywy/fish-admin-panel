@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { auth } from "../config/firebase";
 import { SidebarMenu } from "./SidebarMenu";
 import { DataTable } from "./DataTable";
@@ -7,6 +8,7 @@ import { ControlMap } from "./ControlMap";
 import { StatsCharts } from "./StatsCharts";
 import { RangerStats } from "./RangerStats";
 import UserManagement from "./UserManagement";
+import { Konfigurator } from "./Konfigurator";
 import { useFilters } from "../context/FilterContext";
 import "../style/App.css";
 import "../style/table.css";
@@ -14,16 +16,11 @@ import { Menu, MenuItem, Button } from "@mui/material";
 
 export const Dashboard = () => {
     const navigate = useNavigate();
+    const { currentUser } = useAuth();
     const [activeComponent, setActiveComponent] = useState("dataTable");
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
-    const { resetFilters } = useFilters(); 
-
-    useEffect(() => {
-        if (!auth.currentUser) {
-            navigate("/");
-        }
-    }, [navigate]);
+    const { resetFilters } = useFilters();
 
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -44,7 +41,7 @@ export const Dashboard = () => {
             <div className="main-content">
                 <div className="topbar">
                     <Button onClick={handleMenuOpen} className="user-button">
-                        {auth?.currentUser?.email}
+                        {currentUser?.email}
                     </Button>
                     <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
                         <MenuItem onClick={handleMenuClose}>Szczegóły profilu</MenuItem>
@@ -56,6 +53,7 @@ export const Dashboard = () => {
                 {activeComponent === "statsCharts" && <StatsCharts />}
                 {activeComponent === "rangerStats" && <RangerStats />}
                 {activeComponent === "userManagement" && <UserManagement />}
+                {activeComponent === "konfigurator" && <Konfigurator />}
             </div>
         </div>
     );

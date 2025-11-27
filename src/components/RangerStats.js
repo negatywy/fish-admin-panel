@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import { db, auth } from "../config/firebase";
+import { useFilters } from "../context/FilterContext";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
@@ -9,10 +10,12 @@ import "../style/App.css";
 export const RangerStats = () => {
     const [stats, setStats] = useState([]);
     const [filteredStats, setFilteredStats] = useState([]);
-    const [dateFilter, setDateFilter] = useState("all");
+    const { dateFilter, setDateFilter, customStartDate, setCustomStartDate } = useFilters();
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [loading, setLoading] = useState(true);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+    const [selectedRow, setSelectedRow] = useState(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -118,24 +121,39 @@ export const RangerStats = () => {
 
     useEffect(() => {
         const filterStats = () => {
-            if (dateFilter === "all") {
-                setFilteredStats(stats);
-                setCurrentPage(1);
-                return;
-            }
-
             const now = new Date();
             let cutoffDate = new Date();
+            let endDate;
 
             if (dateFilter === "lastWeek") {
                 cutoffDate.setDate(now.getDate() - 7);
-            } else if (dateFilter === "lastMonth") {
-                cutoffDate.setMonth(now.getMonth() - 1);
+            } else if (dateFilter === "currentMonth") {
+                cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            } else if (dateFilter === "previousMonth") {
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+            } else if (dateFilter === "currentYear") {
+                cutoffDate = new Date(now.getFullYear(), 0, 1);
+            } else if (dateFilter === "previousYear") {
+                cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
+                endDate = new Date(now.getFullYear() - 1, 11, 31);
+            } else if (dateFilter === "custom") {
+                if (customStartDate) {
+                    cutoffDate = new Date(customStartDate);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    endDate = new Date(customStartDate);
+                    endDate.setHours(23, 59, 59, 999);
+                }
             }
 
             const filtered = stats
                 .map(ranger => {
-                    const filteredResults = ranger.controlResults.filter(res => res.date >= cutoffDate);
+                    const filteredResults = ranger.controlResults.filter(res => {
+                        if ((dateFilter === "previousMonth" || dateFilter === "previousYear" || dateFilter === "custom") && endDate) {
+                            return res.date >= cutoffDate && res.date <= endDate;
+                        }
+                        return res.date >= cutoffDate;
+                    });
                     const totalControls = filteredResults.length;
                     const successfulControls = filteredResults.filter(res => res.isSuccess).length;
                     const rejectedControls = totalControls - successfulControls;
@@ -165,7 +183,7 @@ export const RangerStats = () => {
         };
 
         filterStats();
-    }, [dateFilter, stats]);
+    }, [dateFilter, stats, customStartDate]);
 
     useEffect(() => {
         const updateRowsPerPage = () => {
@@ -201,10 +219,61 @@ export const RangerStats = () => {
         saveAs(blob, `ranger_stats_${dateFilter}.csv`);
     };
 
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortedData = () => {
+        if (!sortConfig.key) return filteredStats;
+
+        const sorted = [...filteredStats].sort((a, b) => {
+            if (sortConfig.key === 'email') {
+                // Extract prefix and number from IDs like MAZSSR_0077
+                const extractParts = (id) => {
+                    const match = id.match(/^(.+?)_(\d+)$/);
+                    if (match) {
+                        return { prefix: match[1], number: parseInt(match[2], 10) };
+                    }
+                    return { prefix: id, number: 0 };
+                };
+
+                const aParts = extractParts(a.email);
+                const bParts = extractParts(b.email);
+
+                // First compare by prefix
+                if (aParts.prefix !== bParts.prefix) {
+                    return sortConfig.direction === 'asc'
+                        ? aParts.prefix.localeCompare(bParts.prefix)
+                        : bParts.prefix.localeCompare(aParts.prefix);
+                }
+
+                // Then compare by number
+                return sortConfig.direction === 'asc'
+                    ? aParts.number - bParts.number
+                    : bParts.number - aParts.number;
+            } else if (['patrolDays', 'groupPatrolDays', 'totalControls', 'successfulControls', 'rejectedControls'].includes(sortConfig.key)) {
+                // Numeric sorting for all numeric columns
+                const aValue = a[sortConfig.key] || 0;
+                const bValue = b[sortConfig.key] || 0;
+                return sortConfig.direction === 'asc'
+                    ? aValue - bValue
+                    : bValue - aValue;
+            }
+            return 0;
+        });
+
+        return sorted;
+    };
+
+    const sortedData = getSortedData();
     const indexOfLastRow = currentPage * rowsPerPage;
     const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-    const currentRows = filteredStats.slice(indexOfFirstRow, indexOfLastRow);
-    const totalPages = Math.ceil(filteredStats.length / rowsPerPage);
+    const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
+    const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
     if (loading) {
         return (
@@ -221,10 +290,24 @@ export const RangerStats = () => {
             <div className="filter-container">
                 <label>Filtruj według daty: </label>
                 <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
-                    <option value="all">Wszystkie</option>
+                    <option value="previousYear">Poprzedni rok</option>
                     <option value="lastWeek">Ostatni tydzień</option>
-                    <option value="lastMonth">Ostatni miesiąc</option>
+                    <option value="currentMonth">Bieżący miesiąc</option>
+                    <option value="previousMonth">Poprzedni miesiąc</option>
+                    <option value="currentYear">Bieżący rok</option>
+                    <option value="custom">Wybierz dzień</option>
                 </select>
+                {dateFilter === 'custom' && (
+                    <>
+                        <label>Data: </label>
+                        <input 
+                            type="date" 
+                            value={customStartDate} 
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                            style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd' }}
+                        />
+                    </>
+                )}
                 <button onClick={downloadCSV} className="default-btn">Pobierz CSV</button>
                 <button onClick={fetchData} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
             </div>
@@ -233,17 +316,29 @@ export const RangerStats = () => {
                     <thead>
                         <tr>
                             <th>Strażnik</th>
-                            <th>ID Strażnika</th>
-                            <th>Liczba patroli</th>
-                            <th>Patrole grupowe</th>
-                            <th>Liczba kontroli</th>
-                            <th>Kontrole pozytywne</th>
-                            <th>Wykryte wykroczenia</th>
+                            <th onClick={() => handleSort('email')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                ID Strażnika {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
+                            <th onClick={() => handleSort('patrolDays')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                Liczba patroli {sortConfig.key === 'patrolDays' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
+                            <th onClick={() => handleSort('groupPatrolDays')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                Patrole grupowe {sortConfig.key === 'groupPatrolDays' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
+                            <th onClick={() => handleSort('totalControls')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                Liczba kontroli {sortConfig.key === 'totalControls' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
+                            <th onClick={() => handleSort('successfulControls')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                Kontrole pozytywne {sortConfig.key === 'successfulControls' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
+                            <th onClick={() => handleSort('rejectedControls')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                Wykryte wykroczenia {sortConfig.key === 'rejectedControls' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {currentRows.map((ranger, index) => (
-                            <tr key={index}>
+                            <tr key={index} onClick={() => setSelectedRow(index)} className={selectedRow === index ? 'selected' : ''}>
                                 <td>{ranger.name}</td>
                                 <td>{ranger.email}</td>
                                 <td>{ranger.patrolDays}</td>

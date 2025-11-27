@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useFilters } from "../context/FilterContext";
 import { collection, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
@@ -301,7 +302,7 @@ const UserLogs = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [error, setError] = useState(null);
-    const [dateFilter, setDateFilter] = useState("all");
+    const { dateFilter, setDateFilter, customStartDate, setCustomStartDate } = useFilters();
     const [actionFilter, setActionFilter] = useState("");
     const [adminFilter, setAdminFilter] = useState("");
     const [userFilter, setUserFilter] = useState("");
@@ -338,16 +339,34 @@ const UserLogs = () => {
     // Filtrowanie logów
     const filteredLogs = logs.filter(log => {
         let match = true;
-        if (dateFilter !== "all") {
-            const logDate = log.date?.toDate ? log.date.toDate() : null;
-            if (!logDate) return false;
-            const now = new Date();
-            let cutoffDate = new Date();
-            if (dateFilter === "lastWeek") {
-                cutoffDate.setDate(now.getDate() - 7);
-            } else if (dateFilter === "lastMonth") {
-                cutoffDate.setMonth(now.getMonth() - 1);
+        const logDate = log.date?.toDate ? log.date.toDate() : null;
+        if (!logDate) return false;
+        const now = new Date();
+        let cutoffDate = new Date();
+        let endDate;
+        if (dateFilter === "lastWeek") {
+            cutoffDate.setDate(now.getDate() - 7);
+        } else if (dateFilter === "currentMonth") {
+            cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (dateFilter === "previousMonth") {
+            cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        } else if (dateFilter === "currentYear") {
+            cutoffDate = new Date(now.getFullYear(), 0, 1);
+        } else if (dateFilter === "previousYear") {
+            cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
+            endDate = new Date(now.getFullYear() - 1, 11, 31);
+        } else if (dateFilter === "custom") {
+            if (customStartDate) {
+                cutoffDate = new Date(customStartDate);
+                cutoffDate.setHours(0, 0, 0, 0);
+                endDate = new Date(customStartDate);
+                endDate.setHours(23, 59, 59, 999);
             }
+        }
+        if ((dateFilter === "previousMonth" || dateFilter === "previousYear" || dateFilter === "custom") && endDate) {
+            match = match && logDate >= cutoffDate && logDate <= endDate;
+        } else {
             match = match && logDate >= cutoffDate;
         }
         if (actionFilter) {
@@ -427,10 +446,24 @@ const UserLogs = () => {
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <label>Według daty: </label>
                     <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ minWidth: 140 }}>
-                        <option value="all">Wszystkie</option>
+                        <option value="previousYear">Poprzedni rok</option>
                         <option value="lastWeek">Ostatni tydzień</option>
-                        <option value="lastMonth">Ostatni miesiąc</option>
+                        <option value="currentMonth">Bieżący miesiąc</option>
+                        <option value="previousMonth">Poprzedni miesiąc</option>
+                        <option value="currentYear">Bieżący rok</option>
+                        <option value="custom">Wybierz dzień</option>
                     </select>
+                    {dateFilter === 'custom' && (
+                        <>
+                            <label>Data: </label>
+                            <input 
+                                type="date" 
+                                value={customStartDate} 
+                                onChange={(e) => setCustomStartDate(e.target.value)}
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            />
+                        </>
+                    )}
                     <label>Typ akcji: </label>
                     <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} style={{ minWidth: 100 }}>
                         <option value="">Wszystkie</option>

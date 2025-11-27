@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { useAuth } from "../context/AuthContext";
 import logo from "../assets/ranger_logo.jpg";
 import "../style/auth.css";
 import { QRCodeSVG } from "qrcode.react";
@@ -14,6 +15,13 @@ export const Auth = () => {
     const [error, setError] = useState("");
     const [qrCode, setQrCode] = useState("");
     const navigate = useNavigate();
+    const { currentUser } = useAuth();
+
+    useEffect(() => {
+        if (currentUser) {
+            navigate("/dashboard");
+        }
+    }, [currentUser, navigate]);
 
     const login = async () => {
         setError("");

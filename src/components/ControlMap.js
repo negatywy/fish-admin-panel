@@ -32,7 +32,7 @@ const redIcon = L.icon({
 });
 
 export const ControlMap = () => {
-    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
+    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter, customStartDate } = useFilters();
     const [points, setPoints] = useState([]);
     const [filteredPoints, setFilteredPoints] = useState([]);
     const [mapCenter, setMapCenter] = useState([52.4461, 21.0302]);
@@ -120,14 +120,41 @@ export const ControlMap = () => {
             point.control_date && point.control_date.getFullYear() === currentYear
         );
 
-        if (dateFilter !== "all") {
+        if (dateFilter !== "previousYear") {
             let cutoffDate = new Date();
+            let endDate;
             if (dateFilter === "lastWeek") {
                 cutoffDate.setDate(now.getDate() - 7);
-            } else if (dateFilter === "lastMonth") {
-                cutoffDate.setMonth(now.getMonth() - 1);
+            } else if (dateFilter === "currentMonth") {
+                cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            } else if (dateFilter === "previousMonth") {
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+            } else if (dateFilter === "currentYear") {
+                cutoffDate = new Date(now.getFullYear(), 0, 1);
+            } else if (dateFilter === "previousYear") {
+                cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
+                endDate = new Date(now.getFullYear() - 1, 11, 31);
+            } else if (dateFilter === "custom") {
+                if (customStartDate) {
+                    cutoffDate = new Date(customStartDate);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    endDate = new Date(customStartDate);
+                    endDate.setHours(23, 59, 59, 999);
+                }
             }
-            filtered = filtered.filter(point => point.control_date >= cutoffDate);
+            filtered = filtered.filter(point => {
+                if ((dateFilter === "previousMonth" || dateFilter === "previousYear" || dateFilter === "custom") && endDate) {
+                    return point.control_date >= cutoffDate && point.control_date <= endDate;
+                }
+                return point.control_date >= cutoffDate;
+            });
+        } else {
+            const cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
+            const endDate = new Date(now.getFullYear() - 1, 11, 31);
+            filtered = filtered.filter(point => {
+                return point.control_date >= cutoffDate && point.control_date <= endDate;
+            });
         }
 
         if (clubFilter !== "all") {
@@ -139,7 +166,7 @@ export const ControlMap = () => {
         }
 
         setFilteredPoints(filtered);
-    }, [dateFilter, clubFilter, statusFilter, points]);
+    }, [dateFilter, clubFilter, statusFilter, points, customStartDate]);
     return (
         <div>
             <Filters 

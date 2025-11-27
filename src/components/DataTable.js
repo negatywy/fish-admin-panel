@@ -12,7 +12,7 @@ import { auth } from "../config/firebase";
 
 
 export const DataTable = () => {
-    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter } = useFilters();
+    const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter, customStartDate } = useFilters();
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -20,6 +20,8 @@ export const DataTable = () => {
     const [modalContent, setModalContent] = useState(null);
     const [copySuccess, setCopySuccess] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+    const [selectedRow, setSelectedRow] = useState(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -55,6 +57,14 @@ export const DataTable = () => {
                             console.error(`Błąd pobierania e-maila dla ID: ${controllerId}`, error);
                         }
                     }
+                    // Handle rejection_reason as array or string
+                    let reasonText = null;
+                    if (Array.isArray(data.rejection_reason)) {
+                        reasonText = data.rejection_reason.join('; ');
+                    } else if (data.rejection_reason) {
+                        reasonText = data.rejection_reason;
+                    }
+
                     return {
                         id: document.id,
                         control_date: data.control_date?.toDate() ?? null,
@@ -68,7 +78,7 @@ export const DataTable = () => {
                         latitude: data.position?.latitude ?? null,
                         longitude: data.position?.longitude ?? null,
                         is_success: data.is_success ?? null,
-                        reason: data.rejection_reason ?? null 
+                        reason: reasonText
                     };
                 })
             );
@@ -90,7 +100,7 @@ export const DataTable = () => {
     
     useEffect(() => {
         filterData();
-    }, [dateFilter, clubFilter, statusFilter, data]);
+    }, [dateFilter, clubFilter, statusFilter, data, customStartDate]);
 
     useEffect(() => {
         const updateRowsPerPage = () => {
@@ -115,21 +125,53 @@ export const DataTable = () => {
             return itemDate && itemDate.getFullYear() === currentYear;
         });
         
-        if (dateFilter !== "all") {
+        if (dateFilter !== "previousYear") {
             const now = new Date();
             let cutoffDate;
+            let endDate;
     
             if (dateFilter === "lastWeek") {
                 cutoffDate = new Date();
                 cutoffDate.setDate(now.getDate() - 7);
-            } else if (dateFilter === "lastMonth") {
-                cutoffDate = new Date();
-                cutoffDate.setMonth(now.getMonth() - 1);
+            } else if (dateFilter === "currentMonth") {
+                // First day of current month
+                cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            } else if (dateFilter === "previousMonth") {
+                // First day of previous month
+                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                // Last day of previous month
+                endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+            } else if (dateFilter === "currentYear") {
+                cutoffDate = new Date(now.getFullYear(), 0, 1);
+            } else if (dateFilter === "previousYear") {
+                // First day of previous year
+                cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
+                // Last day of previous year
+                endDate = new Date(now.getFullYear() - 1, 11, 31);
+            } else if (dateFilter === "custom") {
+                if (customStartDate) {
+                    cutoffDate = new Date(customStartDate);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    endDate = new Date(customStartDate);
+                    endDate.setHours(23, 59, 59, 999);
+                }
             }
     
             filtered = filtered.filter(item => {
                 const itemDate = item.control_date ? new Date(item.control_date) : null;
+                if ((dateFilter === "previousMonth" || dateFilter === "previousYear" || dateFilter === "custom") && endDate) {
+                    return itemDate && itemDate >= cutoffDate && itemDate <= endDate;
+                }
                 return itemDate && itemDate >= cutoffDate;
+            });
+        } else {
+            // For previousYear, filter the entire previous year
+            const now = new Date();
+            const cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
+            const endDate = new Date(now.getFullYear() - 1, 11, 31);
+            filtered = filtered.filter(item => {
+                const itemDate = item.control_date ? new Date(item.control_date) : null;
+                return itemDate && itemDate >= cutoffDate && itemDate <= endDate;
             });
         }
     
@@ -169,18 +211,30 @@ export const DataTable = () => {
             return;
         }
 
-        const csvData = filteredData.map((item, index) => ({
-            "Data kontroli": item.control_date ? item.control_date.toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null,
-            "Strażnik": item.controller_name ? item.controller_name : null, // `Strażnik ${index + 1}`
-            "ID Strażnika": item.controller_email ? item.controller_email.split("@")[0] : null,
-            "Kod grupy": item.group_code ? item.group_code : null,
-            "Zezwolenie": item.license_number ? item.license_number : null,
-            "Koło": item.association_club_name ? item.association_club_name : null,
-            "Szerokość geograficzna": item.latitude ? item.latitude : null,
-            "Długość geograficzna": item.longitude ? item.longitude : null,
-            "Wynik kontroli": item.is_success ? "OK" : "Wykroczenia",
-            "Szczegóły kontroli": item.reason ? item.reason : null
-        }));
+        const csvData = filteredData.map((item, index) => {
+            let date = null;
+            let time = null;
+            if (item.control_date) {
+                const formatted = item.control_date.toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                const parts = formatted.split(", ");
+                date = parts[0] || null;
+                time = parts[1] || null;
+            }
+            
+            return {
+                "Data": date,
+                "Godzina": time,
+                "Strażnik": item.controller_name ? item.controller_name : null,
+                "ID Strażnika": item.controller_email ? item.controller_email.split("@")[0] : null,
+                "Kod grupy": item.group_code ? item.group_code : null,
+                "Zezwolenie": item.license_number ? item.license_number : null,
+                "Koło": item.association_club_name ? item.association_club_name : null,
+                "Szerokość geograficzna": item.latitude ? item.latitude : null,
+                "Długość geograficzna": item.longitude ? item.longitude : null,
+                "Wynik kontroli": item.is_success ? "OK" : "Wykroczenia",
+                "Szczegóły kontroli": item.reason ? item.reason : null
+            };
+        });
 
         const csv = Papa.unparse(csvData);
         const utf8BOM = "\uFEFF" + csv;
@@ -223,11 +277,55 @@ export const DataTable = () => {
         return result;
     };
 
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortedData = (dataToSort) => {
+        if (!sortConfig.key) return dataToSort;
+
+        const sorted = [...dataToSort].sort((a, b) => {
+            if (sortConfig.key === 'controller_email') {
+                // Extract prefix and number from IDs like MAZSSR_0077
+                const extractParts = (id) => {
+                    const match = id.match(/^(.+?)_(\d+)$/);
+                    if (match) {
+                        return { prefix: match[1], number: parseInt(match[2], 10) };
+                    }
+                    return { prefix: id, number: 0 };
+                };
+
+                const aParts = extractParts(a.controller_email);
+                const bParts = extractParts(b.controller_email);
+
+                // First compare by prefix
+                if (aParts.prefix !== bParts.prefix) {
+                    return sortConfig.direction === 'asc'
+                        ? aParts.prefix.localeCompare(bParts.prefix)
+                        : bParts.prefix.localeCompare(aParts.prefix);
+                }
+
+                // Then compare by number
+                return sortConfig.direction === 'asc'
+                    ? aParts.number - bParts.number
+                    : bParts.number - aParts.number;
+            }
+            return 0;
+        });
+
+        return sorted;
+    };
+
     const dedupedData = removeDuplicates15Min(filteredData);
+    const sortedData = getSortedData(dedupedData);
     const indexOfLastRow = currentPage * rowsPerPage;
     const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-    const currentRows = dedupedData.slice(indexOfFirstRow, indexOfLastRow);
-    const totalPages = Math.ceil(dedupedData.length / rowsPerPage);
+    const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
+    const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
     if (loading) {
         return (
@@ -261,7 +359,9 @@ export const DataTable = () => {
                         <tr>
                             <th>Data kontroli</th>
                             <th>Strażnik</th>
-                            <th>ID Strażnika</th>
+                            <th onClick={() => handleSort('controller_email')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                ID Strażnika {sortConfig.key === 'controller_email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
                             <th>Kod grupy</th>
                             <th>Zezwolenie</th>
                             <th>Koło</th>
@@ -272,7 +372,7 @@ export const DataTable = () => {
                     </thead>
                     <tbody>
                         {currentRows.map(item => (
-                            <tr key={item.id}>
+                            <tr key={item.id} onClick={() => setSelectedRow(item.id)} className={selectedRow === item.id ? 'selected' : ''}>
                                 <td>{item.control_date ? item.control_date.toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak"}</td>
                                 <td>{item.controller_name}</td>
                                 <td>{item.controller_email}</td>
