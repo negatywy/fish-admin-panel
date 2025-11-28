@@ -39,9 +39,9 @@ body {
 }
 
 .sidebar {
-  width: 200px;
+  width: 10rem;
   background: linear-gradient(135deg, #EBEBEB, #CAD2C5);
-  padding: 10px;
+  padding: 0.625rem;
   border: #2469275d solid 1px;
   display: flex;
   flex-direction: column;
@@ -51,32 +51,33 @@ body {
 .sidebar-logo {
   width: 100%;
   height: auto;
-  margin-bottom: 15px;
-  border-radius: 7px;
+  margin-bottom: 0.9375rem;
+  border-radius: 0.4375rem;
 }
 
 .main-content {
   flex: 1;
-  margin-top: 40px;
-  padding: 20px;
+  margin-top: 4.5rem;
+  padding: 1.25rem;
   overflow-y: auto; 
-  height: calc(100% - 80px); 
+  height: calc(100% - 6rem); 
 }
 .sidebar button {
   display: block;
   width: 100%;
-  margin-bottom: 10px;
-  padding: 10px;
+  margin-bottom: 0.625rem;
+  padding: 0.625rem;
+  font-size: 0.875rem;
 }
 
 .topbar {
-  width: calc(100% - 263px);
+  width: calc(100% - 10rem - 3.9375rem);
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 60px;
+  height: 3.75rem;
   background: linear-gradient(135deg, #CAD2C5, #EBEBEB);
-  padding: 0 20px;
+  padding: 0 1.25rem;
   color: white;
   position: fixed;
   top: 0;
@@ -89,9 +90,9 @@ body {
   color: white !important;
   background-color: #2e7d32a9 !important;
   border: none;
-  font-size: 16px;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 8px 10px !important;
+  padding: 0.5rem 0.625rem !important;
 }
 
 .user-button:hover {
@@ -120,18 +121,18 @@ body {
 
 .modal-content {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  max-width: 500px;
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  max-width: 31.25rem;
   width: 100%;
   position: relative;
 }
 
 .close-btn {
   position: absolute;
-  top: 10px;
-  right: 20px;
-  font-size: 30px;
+  top: 0.625rem;
+  right: 1.25rem;
+  font-size: 1.875rem;
   font-weight: bold;
   color: #333;
   border: none;

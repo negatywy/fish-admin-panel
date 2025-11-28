@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFilters } from '../context/FilterContext';
 
-export const Filters = ({ data, style, downloadCSV, showDownloadButton = true }) => {
+export const Filters = ({ data, style, downloadCSV, showDownloadButton = true, refreshData }) => {
     const { dateFilter, setDateFilter, clubFilter, setClubFilter, statusFilter, setStatusFilter, customStartDate, setCustomStartDate } = useFilters();
 
     return (
@@ -25,6 +25,9 @@ export const Filters = ({ data, style, downloadCSV, showDownloadButton = true })
                         style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd' }}
                     />
                 </>
+            )}
+            {dateFilter === 'custom' && customStartDate === new Date().toISOString().slice(0, 10) && refreshData && (
+                <button onClick={refreshData} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
             )}
 
             <label title="Nr. Koła osoby kontrolowanej">Według koła: </label>

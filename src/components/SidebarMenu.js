@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
 import { useFilters } from "../context/FilterContext";
 import { useAuth } from "../context/AuthContext";
+import { FaChartBar, FaHistory, FaMap, FaChartLine, FaUsers, FaCog } from "react-icons/fa";
 import logo from "../assets/ranger_logo.jpg";
 
 export const SidebarMenu = ({ setActiveComponent }) => {
@@ -29,16 +30,15 @@ export const SidebarMenu = ({ setActiveComponent }) => {
     return (
         <div className="sidebar">
             <img src={logo} alt="Logo" className="sidebar-logo" />
-            <button className="default-btn" onClick={() => handleNavigation("dataTable")}>Historia kontroli</button>
-            {/* <button className="default-btn" onClick={() => handleNavigation("statsCharts")}>Wykresy statystyk</button> */}
-            <button className="default-btn" onClick={() => handleNavigation("controlMap")}>Mapa kontroli</button>
-            <button className="default-btn" onClick={() => handleNavigation("rangerStats")}>Statystyki strażników</button>
-            <button disabled={true}>Wykresy statystyk</button>
-            <button className="default-btn" onClick={() => handleNavigation("userManagement", "currentMonth")}>Użytkownicy</button>
-            <button className="default-btn" onClick={() => handleNavigation("konfigurator")}>Konfigurator</button>
+            <button className="default-btn" onClick={() => handleNavigation("dataTable")}><FaHistory style={{marginRight: '0.5rem'}} />Historia kontroli</button>
+            <button className="default-btn" onClick={() => handleNavigation("controlMap")}><FaMap style={{marginRight: '0.5rem'}} />Mapa kontroli</button>
+            <button className="default-btn" onClick={() => handleNavigation("rangerStats")}><FaChartLine style={{marginRight: '0.5rem'}} />Statystyki</button>
+            <button className="default-btn" onClick={() => handleNavigation("statsCharts")}><FaChartBar style={{marginRight: '0.5rem'}} />Wykresy statystyk</button>
+            <button className="default-btn" onClick={() => handleNavigation("userManagement", "currentMonth")}><FaUsers style={{marginRight: '0.5rem'}} />Użytkownicy</button>
+            <button className="default-btn" onClick={() => handleNavigation("konfigurator")}><FaCog style={{marginRight: '0.5rem'}} />Konfigurator</button>
             {isOmpzwAdmin && (
-                <div style={{marginTop: 'auto', padding: '16px', textAlign: 'center'}}>
-                    <img src="/logo_ompzw.png" alt="OMPZW Logo" style={{maxWidth: '100%', height: 'auto'}} />
+                <div style={{marginTop: 'auto', padding: '1rem', textAlign: 'center'}}>
+                    <img src="/logo_ompzw.png" alt="OMPZW Logo" style={{width: '100%', height: 'auto'}} />
                 </div>
             )}
         </div>

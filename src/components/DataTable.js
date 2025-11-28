@@ -338,20 +338,12 @@ export const DataTable = () => {
 
     return (
         <div>
-            <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
-                <h1 style={{margin: 0}}>Historia kontroli</h1>
-                <button className="default-btn" onClick={fetchData} style={{height: 30}} title="Odśwież dane">Odśwież</button>
-            </div>
+            <h1>Historia kontroli</h1>
             <Filters
-                dateFilter={dateFilter}
-                setDateFilter={setDateFilter}
-                clubFilter={clubFilter}
-                setClubFilter={setClubFilter}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
                 data={data}
                 downloadCSV={downloadCSV}
-                showDownloadButton={true} 
+                showDownloadButton={true}
+                refreshData={fetchData}
             />
             <div className="table-container">
                 <table>

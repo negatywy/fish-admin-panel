@@ -308,7 +308,9 @@ export const RangerStats = () => {
                         />
                     </>
                 )}
-                <button onClick={downloadCSV} className="default-btn">Pobierz CSV</button>
+                {dateFilter === 'custom' && customStartDate === new Date().toISOString().slice(0, 10) && (
+                    <button onClick={fetchData} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
+                )}
                 <button onClick={fetchData} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
             </div>
             <div className="table-container">

@@ -38,8 +38,7 @@ export const ControlMap = () => {
     const [mapCenter, setMapCenter] = useState([52.4461, 21.0302]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchPoints = async () => {
+    const fetchPoints = async () => {
             setLoading(true);
             try {
                 const querySnapshot = await getDocs(collection(db, "ssr_controls"));
@@ -109,6 +108,7 @@ export const ControlMap = () => {
             setLoading(false);
         };
 
+    useEffect(() => {
         fetchPoints();
     }, []);
 
@@ -170,15 +170,10 @@ export const ControlMap = () => {
     return (
         <div>
             <Filters 
-                dateFilter={dateFilter} 
-                setDateFilter={setDateFilter} 
-                clubFilter={clubFilter} 
-                setClubFilter={setClubFilter} 
-                statusFilter={statusFilter} 
-                setStatusFilter={setStatusFilter} 
                 data={points} 
                 style={{ margin: "10px 0" }}
                 showDownloadButton={false}
+                refreshData={fetchPoints}
             />
             {loading ? (
                 <div className="spinner" style={{ flexDirection: "column" }}>
@@ -188,13 +183,16 @@ export const ControlMap = () => {
             ) : (
                 <MapContainer 
                     center={mapCenter} 
-                    zoom={10} 
+                    zoom={10}
+                    minZoom={10}
+                    maxZoom={17}
                     style={{ height: "calc(90vh - 20px)", width: "100%" }}
                     className="map-container"
                 >
                     <SetMapCenter center={mapCenter} />
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        //url="https://ompzw.pl/mapTiles/{z}/{x}/{y}.png"
                         attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
                     />
                     {filteredPoints.map(point => (

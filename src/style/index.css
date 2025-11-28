@@ -1,3 +1,11 @@
+html {
+  /* Base font size that scales with viewport width */
+  /* At 1920px width: calc(10px + 0.15vw) = 10 + 2.88 = ~12.88px */
+  /* At 1440px width: calc(10px + 0.15vw) = 10 + 2.16 = ~12.16px */
+  /* At 1280px width: calc(10px + 0.15vw) = 10 + 1.92 = ~11.92px */
+  font-size: calc(10px + 0.15vw);
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,6 +13,22 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 1rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+h3 {
+  font-size: 1.125rem;
+  margin: 0.5rem 0;
 }
 
 code {

@@ -425,23 +425,7 @@ const UserLogs = () => {
 
     return (
         <div>
-            <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
-                <h2 style={{margin: 7}}>Logi użytkowników</h2>
-                <button className="default-btn" onClick={() => {
-                    setLoading(true);
-                    (async () => {
-                        try {
-                            const querySnapshot = await getDocs(collection(db, "user_mngmnt_logs"));
-                            const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            items.sort((a, b) => (b.date?.toDate?.() || 0) - (a.date?.toDate?.() || 0));
-                            setLogs(items);
-                        } catch (err) {
-                            setError("Błąd pobierania logów użytkowników");
-                        }
-                        setLoading(false);
-                    })();
-                }} title="Odśwież dane">Odśwież</button>
-            </div>
+            <h1>Zarządzanie użytkownikami</h1>
             <div style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <label>Według daty: </label>
@@ -463,6 +447,22 @@ const UserLogs = () => {
                                 style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd' }}
                             />
                         </>
+                    )}
+                    {dateFilter === 'custom' && customStartDate === new Date().toISOString().slice(0, 10) && (
+                        <button onClick={() => {
+                            setLoading(true);
+                            (async () => {
+                                try {
+                                    const querySnapshot = await getDocs(collection(db, "user_mngmnt_logs"));
+                                    const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                    items.sort((a, b) => (b.date?.toDate?.() || 0) - (a.date?.toDate?.() || 0));
+                                    setLogs(items);
+                                } catch (err) {
+                                    setError("Błąd pobierania logów użytkowników");
+                                }
+                                setLoading(false);
+                            })();
+                        }} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
                     )}
                     <label>Typ akcji: </label>
                     <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} style={{ minWidth: 100 }}>

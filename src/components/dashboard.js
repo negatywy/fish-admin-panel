@@ -20,7 +20,30 @@ export const Dashboard = () => {
     const [activeComponent, setActiveComponent] = useState("dataTable");
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
-    const { resetFilters } = useFilters();
+    const { resetFilters, dateFilter, customStartDate } = useFilters();
+
+    const getAssociationName = () => {
+        switch (currentUser?.email) {
+            case "admin.ompzw@naturai.pl":
+                return "Okręg Mazowiecki";
+            case "admin.tbga@naturai.pl":
+                return "Okręg PZW w Tarnobrzegu";
+            default:
+                return "Wszystkie okręgi";
+        }
+    };
+
+    const getDateRangeLabel = () => {
+        const labels = {
+            previousYear: "Poprzedni rok",
+            lastWeek: "Ostatni tydzień",
+            currentMonth: "Bieżący miesiąc",
+            previousMonth: "Poprzedni miesiąc",
+            currentYear: "Bieżący rok",
+            custom: customStartDate ? new Date(customStartDate).toLocaleDateString("pl-PL") : "Wybrany dzień"
+        };
+        return labels[dateFilter] || "Wszystkie";
+    };
 
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -40,6 +63,11 @@ export const Dashboard = () => {
             <SidebarMenu setActiveComponent={setActiveComponent} />
             <div className="main-content">
                 <div className="topbar">
+                    <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: '1rem', color: '#246928', fontWeight: 'bold', fontSize: '1.25rem'}}>
+                        <span>Straż SSR - {getAssociationName()}</span>
+                        <span style={{color: '#666'}}>•</span>
+                        <span>{getDateRangeLabel()}</span>
+                    </div>
                     <Button onClick={handleMenuOpen} className="user-button">
                         {currentUser?.email}
                     </Button>

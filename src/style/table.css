@@ -14,11 +14,12 @@ table {
 
 th, td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 0.5rem;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.875rem;
 }
 
 th {
@@ -44,15 +45,26 @@ tr.selected {
     display: flex;
     align-items: center;
     gap: 10px;
+    font-size: 0.875rem;
+}
+
+.filter-container label {
+    font-size: 0.875rem;
+}
+
+.filter-container select,
+.filter-container input {
+    font-size: 0.875rem;
 }
 
 .default-btn {
     background-color: #249b3e;
     color: white;
     border: none;
-    padding: 8px 12px;
+    padding: 0.5rem 0.75rem;
     cursor: pointer;
     border-radius: 5px;
+    font-size: 0.875rem;
 }
 
 .default-btn:hover, .copy-btn:hover {
@@ -62,9 +74,9 @@ tr.selected {
 
 .pagination-btn {
     border: none;
-    padding: 8px 10px 3px 10px;
+    padding: 0.5rem 0.625rem 0.1875rem 0.625rem;
     margin: 0px 10px;
-    font-size: large;
+    font-size: 1rem;
     border-radius: 10px;
     background-color: transparent;
     -webkit-transition: background-color 0.3s;
@@ -73,8 +85,8 @@ tr.selected {
 
 .copy-btn {
     border: none;
-    padding: 5px 10px;
-    font-size: 16px;
+    padding: 0.3125rem 0.625rem;
+    font-size: 1rem;
     border-radius: 5px;
     background-color: #aaccac;
     -webkit-transition: background-color 0.3s;

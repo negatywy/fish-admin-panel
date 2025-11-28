@@ -206,10 +206,7 @@ export const Konfigurator = () => {
 
     return (
         <div>
-            <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
-                <h1 style={{margin: 0}}>Konfigurator</h1>
-                <button className="default-btn" onClick={fetchReasons} style={{height: 30}} title="Odśwież dane">Odśwież</button>
-            </div>
+            <h1>Konfigurator</h1>
             <div style={{display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap'}}>
                 <input 
                     type="text" 
