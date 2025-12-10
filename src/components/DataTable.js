@@ -313,6 +313,20 @@ export const DataTable = () => {
                 return sortConfig.direction === 'asc'
                     ? aParts.number - bParts.number
                     : bParts.number - aParts.number;
+            } else if (sortConfig.key === 'controller_name') {
+                // String sorting for ranger names
+                const aName = a.controller_name || '';
+                const bName = b.controller_name || '';
+                return sortConfig.direction === 'asc'
+                    ? aName.localeCompare(bName, 'pl')
+                    : bName.localeCompare(aName, 'pl');
+            } else if (sortConfig.key === 'control_date') {
+                // Date sorting
+                const aTime = a.control_date ? a.control_date.getTime() : 0;
+                const bTime = b.control_date ? b.control_date.getTime() : 0;
+                return sortConfig.direction === 'asc'
+                    ? aTime - bTime
+                    : bTime - aTime;
             }
             return 0;
         });
@@ -349,10 +363,14 @@ export const DataTable = () => {
                 <table>
                     <thead>
                         <tr>
-                            <th>Data kontroli</th>
-                            <th>Strażnik</th>
+                            <th onClick={() => handleSort('control_date')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                Data kontroli {sortConfig.key === 'control_date' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}
+                            </th>
+                            <th onClick={() => handleSort('controller_name')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                Strażnik {sortConfig.key === 'controller_name' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}
+                            </th>
                             <th onClick={() => handleSort('controller_email')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                                ID Strażnika {sortConfig.key === 'controller_email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                ID Strażnika {sortConfig.key === 'controller_email' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}
                             </th>
                             <th>Kod grupy</th>
                             <th>Zezwolenie</th>
