@@ -9,6 +9,7 @@ import { StatsCharts } from "./StatsCharts";
 import { RangerStats } from "./RangerStats";
 import UserManagement from "./UserManagement";
 import { Konfigurator } from "./Konfigurator";
+import { RemoveDuplicates } from "./RemoveDuplicates";
 import { useFilters } from "../context/FilterContext";
 import "../style/App.css";
 import "../style/table.css";
@@ -82,6 +83,7 @@ export const Dashboard = () => {
                 {activeComponent === "rangerStats" && <RangerStats />}
                 {activeComponent === "userManagement" && <UserManagement />}
                 {activeComponent === "konfigurator" && <Konfigurator />}
+                {activeComponent === "removeDuplicates" && <RemoveDuplicates />}
             </div>
         </div>
     );

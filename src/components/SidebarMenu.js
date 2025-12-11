@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
 import { useFilters } from "../context/FilterContext";
 import { useAuth } from "../context/AuthContext";
-import { FaChartBar, FaHistory, FaMap, FaChartLine, FaUsers, FaCog } from "react-icons/fa";
+import { FaChartBar, FaHistory, FaMap, FaChartLine, FaUsers, FaCog, FaTrashAlt } from "react-icons/fa";
 import logo from "../assets/ranger_logo.jpg";
 
 export const SidebarMenu = ({ setActiveComponent }) => {
@@ -36,6 +36,7 @@ export const SidebarMenu = ({ setActiveComponent }) => {
             <button className="default-btn" onClick={() => handleNavigation("statsCharts")}><FaChartBar style={{marginRight: '0.5rem'}} />Wykresy statystyk</button>
             <button className="default-btn" onClick={() => handleNavigation("userManagement", "currentMonth")}><FaUsers style={{marginRight: '0.5rem'}} />Użytkownicy</button>
             <button className="default-btn" onClick={() => handleNavigation("konfigurator")}><FaCog style={{marginRight: '0.5rem'}} />Konfigurator</button>
+            <button className="default-btn" onClick={() => handleNavigation("removeDuplicates")}><FaTrashAlt style={{marginRight: '0.5rem'}} />Usuń duplikaty</button>
             {isOmpzwAdmin && (
                 <div style={{marginTop: 'auto', padding: '1rem', textAlign: 'center'}}>
                     <img src="/logo_ompzw.png" alt="OMPZW Logo" style={{width: '100%', height: 'auto'}} />
