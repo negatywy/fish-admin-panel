@@ -44,6 +44,7 @@ export const RangerStats = () => {
 
             const now = new Date();
             const currentYear = now.getFullYear();
+            const previousYear = currentYear - 1;
             const rangerData = {};
 
             await Promise.all(querySnapshot.docs.map(async (document) => {
@@ -66,7 +67,10 @@ export const RangerStats = () => {
                     }
                 }
 
-                if (!controlDate || controlDate.getFullYear() !== currentYear) return;
+                // Include current year and previous year data
+                if (!controlDate) return;
+                const year = controlDate.getFullYear();
+                if (year !== currentYear && year !== previousYear) return;
                 if (regionName !== "all" && data.association_name !== regionName) return;
 
                 if (!rangerData[ranger]) {
@@ -312,6 +316,7 @@ export const RangerStats = () => {
                     <button onClick={fetchData} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
                 )}
                 <button onClick={fetchData} className="default-btn" style={{ marginLeft: 8 }}>Odśwież</button>
+                <button onClick={downloadCSV} className="default-btn" style={{ marginLeft: 8 }}>Pobierz CSV</button>
             </div>
             <div className="table-container">
                 <table>

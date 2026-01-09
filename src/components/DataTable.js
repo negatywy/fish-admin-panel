@@ -120,10 +120,13 @@ export const DataTable = () => {
         const now = new Date();
         const currentYear = now.getFullYear();
 
-        filtered = filtered.filter(item => {
-            const itemDate = item.control_date ? new Date(item.control_date) : null;
-            return itemDate && itemDate.getFullYear() === currentYear;
-        });
+        // Only filter by current year if NOT selecting previous year
+        if (dateFilter !== "previousYear") {
+            filtered = filtered.filter(item => {
+                const itemDate = item.control_date ? new Date(item.control_date) : null;
+                return itemDate && itemDate.getFullYear() === currentYear;
+            });
+        }
         
         if (dateFilter !== "previousYear") {
             const now = new Date();

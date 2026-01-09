@@ -116,9 +116,13 @@ export const ControlMap = () => {
         const now = new Date();
         const currentYear = now.getFullYear();
 
-        let filtered = points.filter(point => 
-            point.control_date && point.control_date.getFullYear() === currentYear
-        );
+        // Only filter by current year if NOT selecting previous year
+        let filtered = points;
+        if (dateFilter !== "previousYear") {
+            filtered = filtered.filter(point => 
+                point.control_date && point.control_date.getFullYear() === currentYear
+            );
+        }
 
         if (dateFilter !== "previousYear") {
             let cutoffDate = new Date();
