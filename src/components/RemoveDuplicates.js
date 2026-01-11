@@ -86,10 +86,13 @@ export const RemoveDuplicates = () => {
     const now = new Date();
     const currentYear = now.getFullYear();
 
-    filtered = filtered.filter(item => {
-      const itemDate = item.control_date ? (item.control_date.toDate ? item.control_date.toDate() : new Date(item.control_date)) : null;
-      return itemDate && itemDate.getFullYear() === currentYear;
-    });
+    // Skip year filter if previousMonth and we're in January (prev month is in prev year)
+    if (!(dateFilter === "previousMonth" && now.getMonth() === 0)) {
+      filtered = filtered.filter(item => {
+        const itemDate = item.control_date ? (item.control_date.toDate ? item.control_date.toDate() : new Date(item.control_date)) : null;
+        return itemDate && itemDate.getFullYear() === currentYear;
+      });
+    }
     
     if (dateFilter !== "previousYear") {
       const now = new Date();
@@ -103,7 +106,9 @@ export const RemoveDuplicates = () => {
         cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
       } else if (dateFilter === "previousMonth") {
         cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        cutoffDate.setHours(0, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        endDate.setHours(23, 59, 59, 999);
       } else if (dateFilter === "currentYear") {
         cutoffDate = new Date(now.getFullYear(), 0, 1);
       } else if (dateFilter === "previousYear") {

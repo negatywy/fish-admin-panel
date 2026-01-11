@@ -71,7 +71,9 @@ export const StatsCharts = () => {
                 cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
             } else if (dateFilter === "previousMonth") {
                 cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                cutoffDate.setHours(0, 0, 0, 0);
                 endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+                endDate.setHours(23, 59, 59, 999);
             } else if (dateFilter === "currentYear") {
                 cutoffDate = new Date(now.getFullYear(), 0, 1);
             } else if (dateFilter === "previousYear") {
@@ -258,6 +260,34 @@ export const StatsCharts = () => {
         fetchData();
     }, [dateFilter, customStartDate]);
 
+    const getDateRangeLabel = () => {
+        const now = new Date();
+        switch (dateFilter) {
+            case "previousYear":
+                return `Poprzedni rok (${now.getFullYear() - 1})`;
+            case "lastWeek": {
+                const weekAgo = new Date(now);
+                weekAgo.setDate(now.getDate() - 7);
+                return `Ostatni tydzień (${weekAgo.toLocaleDateString("pl-PL")} - ${now.toLocaleDateString("pl-PL")})`;
+            }
+            case "currentMonth": {
+                const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
+                return `Bieżący miesiąc (${monthNames[now.getMonth()]} ${now.getFullYear()})`;
+            }
+            case "previousMonth": {
+                const monthNames = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
+                const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                return `Poprzedni miesiąc (${monthNames[prevMonth.getMonth()]} ${prevMonth.getFullYear()})`;
+            }
+            case "currentYear":
+                return `Bieżący rok (${now.getFullYear()})`;
+            case "custom":
+                return customStartDate ? `Wybrany dzień (${new Date(customStartDate).toLocaleDateString("pl-PL")})` : "Wybierz dzień";
+            default:
+                return "";
+        }
+    };
+
     const exportToPDF = async () => {
         if (!chartContainerRef.current) return;
         
@@ -306,7 +336,7 @@ export const StatsCharts = () => {
             },
             title: {
                 display: true,
-                text: 'Statystyki kontroli i patroli',
+                text: `Statystyki kontroli i patroli - ${getDateRangeLabel()}`,
                 font: {
                     size: 16,
                     weight: 'bold'

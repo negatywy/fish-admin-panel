@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { FaChartBar, FaHistory, FaMap, FaChartLine, FaUsers, FaCog, FaTrashAlt } from "react-icons/fa";
 import logo from "../assets/ranger_logo.jpg";
 
-export const SidebarMenu = ({ setActiveComponent }) => {
+export const SidebarMenu = ({ setActiveComponent, activeComponent }) => {
     const navigate = useNavigate();
     const { setDateFilter } = useFilters();
     const { currentUser } = useAuth();
@@ -30,13 +30,13 @@ export const SidebarMenu = ({ setActiveComponent }) => {
     return (
         <div className="sidebar">
             <img src={logo} alt="Logo" className="sidebar-logo" />
-            <button className="default-btn" onClick={() => handleNavigation("dataTable")}><FaHistory style={{marginRight: '0.5rem'}} />Historia kontroli</button>
-            <button className="default-btn" onClick={() => handleNavigation("controlMap")}><FaMap style={{marginRight: '0.5rem'}} />Mapa kontroli</button>
-            <button className="default-btn" onClick={() => handleNavigation("rangerStats")}><FaChartLine style={{marginRight: '0.5rem'}} />Statystyki</button>
-            <button className="default-btn" onClick={() => handleNavigation("statsCharts")}><FaChartBar style={{marginRight: '0.5rem'}} />Wykresy statystyk</button>
-            <button className="default-btn" onClick={() => handleNavigation("userManagement", "currentMonth")}><FaUsers style={{marginRight: '0.5rem'}} />Użytkownicy</button>
-            <button className="default-btn" onClick={() => handleNavigation("konfigurator")}><FaCog style={{marginRight: '0.5rem'}} />Konfigurator</button>
-            <button className="default-btn" onClick={() => handleNavigation("removeDuplicates")}><FaTrashAlt style={{marginRight: '0.5rem'}} />Usuń duplikaty</button>
+            <button className={`default-btn ${activeComponent === "dataTable" ? "active" : ""}`} onClick={() => handleNavigation("dataTable")}><FaHistory style={{marginRight: '0.5rem'}} />Historia kontroli</button>
+            <button className={`default-btn ${activeComponent === "controlMap" ? "active" : ""}`} onClick={() => handleNavigation("controlMap")}><FaMap style={{marginRight: '0.5rem'}} />Mapa kontroli</button>
+            <button className={`default-btn ${activeComponent === "rangerStats" ? "active" : ""}`} onClick={() => handleNavigation("rangerStats")}><FaChartLine style={{marginRight: '0.5rem'}} />Statystyki</button>
+            <button className={`default-btn ${activeComponent === "statsCharts" ? "active" : ""}`} onClick={() => handleNavigation("statsCharts")}><FaChartBar style={{marginRight: '0.5rem'}} />Wykresy statystyk</button>
+            <button className={`default-btn ${activeComponent === "userManagement" ? "active" : ""}`} onClick={() => handleNavigation("userManagement", "currentMonth")}><FaUsers style={{marginRight: '0.5rem'}} />Użytkownicy</button>
+            <button className={`default-btn ${activeComponent === "konfigurator" ? "active" : ""}`} onClick={() => handleNavigation("konfigurator")}><FaCog style={{marginRight: '0.5rem'}} />Konfigurator</button>
+            <button className={`default-btn ${activeComponent === "removeDuplicates" ? "active" : ""}`} onClick={() => handleNavigation("removeDuplicates")}><FaTrashAlt style={{marginRight: '0.5rem'}} />Usuń duplikaty</button>
             {isOmpzwAdmin && (
                 <div style={{marginTop: 'auto', padding: '1rem', textAlign: 'center'}}>
                     <img src="/logo_ompzw.png" alt="OMPZW Logo" style={{width: '100%', height: 'auto'}} />

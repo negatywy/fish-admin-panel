@@ -307,6 +307,7 @@ const UserLogs = () => {
     const [adminFilter, setAdminFilter] = useState("");
     const [userFilter, setUserFilter] = useState("");
     const [loading, setLoading] = useState(true);
+    const [selectedRow, setSelectedRow] = useState(null);
 
     useEffect(() => {
         const fetchLogs = async () => {
@@ -350,7 +351,9 @@ const UserLogs = () => {
             cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
         } else if (dateFilter === "previousMonth") {
             cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            cutoffDate.setHours(0, 0, 0, 0);
             endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+            endDate.setHours(23, 59, 59, 999);
         } else if (dateFilter === "currentYear") {
             cutoffDate = new Date(now.getFullYear(), 0, 1);
         } else if (dateFilter === "previousYear") {
@@ -425,7 +428,7 @@ const UserLogs = () => {
 
     return (
         <div>
-            <h1>Zarządzanie użytkownikami</h1>
+            <h1>Zarządzanie użytkownikami - dziennik</h1>
             <div style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <label>Według daty: </label>
@@ -499,9 +502,15 @@ const UserLogs = () => {
                     </thead>
                     <tbody>
                         {currentRows.map(log => (
-                            <tr key={log.id}>
+                            <tr 
+                                key={log.id}
+                                className={selectedRow === log.id ? 'selected' : ''}
+                                onClick={() => setSelectedRow(selectedRow === log.id ? null : log.id)}
+                            >
                                 <td>{log.date?.toDate ? log.date.toDate().toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak"}</td>
-                                <td>{log.action || "-"}</td>
+                                <td style={{ color: log.action === "delete" ? "red" : "inherit", fontWeight: log.action === "delete" ? "bold" : "normal" }}>
+                                    {log.action === "delete" ? "Usunięcie" : log.action === "create" ? "Utworzenie" : (log.action || "-")}
+                                </td>
                                 <td>{log.admin || "-"}</td>
                                 <td>{log.user || "-"}</td>
                             </tr>

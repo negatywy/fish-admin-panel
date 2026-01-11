@@ -117,8 +117,9 @@ export const ControlMap = () => {
         const currentYear = now.getFullYear();
 
         // Only filter by current year if NOT selecting previous year
+        // Also skip year filter if previousMonth and we're in January (prev month is in prev year)
         let filtered = points;
-        if (dateFilter !== "previousYear") {
+        if (dateFilter !== "previousYear" && !(dateFilter === "previousMonth" && now.getMonth() === 0)) {
             filtered = filtered.filter(point => 
                 point.control_date && point.control_date.getFullYear() === currentYear
             );
@@ -133,7 +134,9 @@ export const ControlMap = () => {
                 cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
             } else if (dateFilter === "previousMonth") {
                 cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                cutoffDate.setHours(0, 0, 0, 0);
                 endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+                endDate.setHours(23, 59, 59, 999);
             } else if (dateFilter === "currentYear") {
                 cutoffDate = new Date(now.getFullYear(), 0, 1);
             } else if (dateFilter === "previousYear") {

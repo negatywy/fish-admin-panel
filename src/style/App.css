@@ -70,6 +70,12 @@ body {
   font-size: 0.875rem;
 }
 
+.sidebar button.active {
+  background-color: #246928 !important;
+  color: white !important;
+  font-weight: bold;
+}
+
 .topbar {
   width: calc(100% - 10rem - 3.9375rem);
   display: flex;

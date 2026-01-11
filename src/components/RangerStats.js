@@ -135,7 +135,9 @@ export const RangerStats = () => {
                 cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
             } else if (dateFilter === "previousMonth") {
                 cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                cutoffDate.setHours(0, 0, 0, 0);
                 endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+                endDate.setHours(23, 59, 59, 999);
             } else if (dateFilter === "currentYear") {
                 cutoffDate = new Date(now.getFullYear(), 0, 1);
             } else if (dateFilter === "previousYear") {

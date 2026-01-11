@@ -121,7 +121,8 @@ export const DataTable = () => {
         const currentYear = now.getFullYear();
 
         // Only filter by current year if NOT selecting previous year
-        if (dateFilter !== "previousYear") {
+        // Also skip year filter if previousMonth and we're in January (prev month is in prev year)
+        if (dateFilter !== "previousYear" && !(dateFilter === "previousMonth" && now.getMonth() === 0)) {
             filtered = filtered.filter(item => {
                 const itemDate = item.control_date ? new Date(item.control_date) : null;
                 return itemDate && itemDate.getFullYear() === currentYear;
@@ -142,8 +143,10 @@ export const DataTable = () => {
             } else if (dateFilter === "previousMonth") {
                 // First day of previous month
                 cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                cutoffDate.setHours(0, 0, 0, 0);
                 // Last day of previous month
                 endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+                endDate.setHours(23, 59, 59, 999);
             } else if (dateFilter === "currentYear") {
                 cutoffDate = new Date(now.getFullYear(), 0, 1);
             } else if (dateFilter === "previousYear") {
