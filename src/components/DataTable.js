@@ -29,6 +29,78 @@ export const DataTable = () => {
             console.log("Łączenie z Firestore...");
             const querySnapshot = await getDocs(collection(db, "ssr_controls"));
             const user = auth.currentUser;
+            const userInfoCache = new Map();
+            const groupUsersCache = new Map();
+            const controllerNameById = new Map();
+
+            querySnapshot.docs.forEach((document) => {
+                const data = document.data();
+                if (data?.controller_id && data?.controller_name) {
+                    controllerNameById.set(data.controller_id, data.controller_name);
+                }
+            });
+
+            const getUserInfo = async (userId) => {
+                if (!userId) return { name: "Nieznany" };
+                if (userInfoCache.has(userId)) return userInfoCache.get(userId);
+                try {
+                    const userDocRef = doc(db, "users", userId);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        const email = userData.email ?? "Brak e-maila";
+                        const name = userData.displayName || userData.name || userData.fullName || controllerNameById.get(userId) || email.split("@")[0];
+                        const info = { name };
+                        userInfoCache.set(userId, info);
+                        return info;
+                    }
+                } catch (error) {
+                    console.error(`Błąd pobierania danych użytkownika dla ID: ${userId}`, error);
+                }
+                const fallback = { name: "Nieznany" };
+                userInfoCache.set(userId, fallback);
+                return fallback;
+            };
+
+            const getGroupUsers = async (groupCode) => {
+                const normalized = typeof groupCode === "string" ? groupCode.trim() : groupCode;
+                if (!normalized || !normalized.startsWith("GRUPA_")) return [];
+                if (groupUsersCache.has(normalized)) return groupUsersCache.get(normalized);
+                try {
+                    const groupDoc = await getDoc(doc(db, "ssr_groups", normalized));
+                    if (!groupDoc.exists()) {
+                        groupUsersCache.set(normalized, []);
+                        return [];
+                    }
+                    const usersArray = groupDoc.data()?.users || [];
+                    groupUsersCache.set(normalized, usersArray);
+                    return usersArray;
+                } catch (error) {
+                    console.error(`Błąd pobierania użytkowników grupy dla kodu: ${normalized}`, error);
+                }
+                const fallback = [];
+                groupUsersCache.set(normalized, fallback);
+                return fallback;
+            };
+
+            const getGroupMemberNames = async (groupCode, controlDate) => {
+                const users = await getGroupUsers(groupCode);
+                if (!users.length || !controlDate) return [];
+                const dateKey = controlDate.toISOString().slice(0, 10);
+                const memberIds = users
+                    .filter((entry) => {
+                        const entryId = entry?.id || entry?.uid;
+                        if (!entryId) return false;
+                        const joined = entry?.joined?.toDate ? entry.joined.toDate() : entry?.joined ? new Date(entry.joined) : null;
+                        if (!joined) return false;
+                        return joined.toISOString().slice(0, 10) === dateKey;
+                    })
+                    .map((entry) => entry?.id || entry?.uid);
+                if (memberIds.length === 0) return [];
+                const uniqueIds = Array.from(new Set(memberIds));
+                const infos = await Promise.all(uniqueIds.map((userId) => getUserInfo(userId)));
+                return infos.map((info) => info.name).filter(Boolean);
+            };
             let regionName ="all";
             switch (user.email) {
                 case "admin.ompzw@naturai.pl":
@@ -44,8 +116,13 @@ export const DataTable = () => {
             const items = await Promise.all(
                 querySnapshot.docs.map(async (document) => {
                     const data = document.data();
-                    const rangerName = data.controller_name ?? "Nieznany";
                     const controllerId = data.controller_id ?? null;
+                    let rangerName = data.controller_name ?? null;
+                    if (!rangerName && controllerId) {
+                        const info = await getUserInfo(controllerId);
+                        rangerName = info.name || "Nieznany";
+                    }
+                    const groupCode = typeof data.group_code === "string" ? data.group_code.trim() : data.group_code ?? null;
                     let email = null;
                     if (controllerId) {
                         try {
@@ -56,6 +133,11 @@ export const DataTable = () => {
                         } catch (error) {
                             console.error(`Błąd pobierania e-maila dla ID: ${controllerId}`, error);
                         }
+                    }
+                    let groupMembers = [];
+                    if (groupCode && groupCode.startsWith("GRUPA_")) {
+                        const controlDate = data.control_date?.toDate() ?? null;
+                        groupMembers = await getGroupMemberNames(groupCode, controlDate);
                     }
                     // Handle rejection_reason as array or string
                     let reasonText = null;
@@ -73,7 +155,8 @@ export const DataTable = () => {
                         controller_name: rangerName,
                         controller_id: controllerId,
                         controller_email: email ? email.split("@")[0] : "Brak e-maila",
-                        group_code: data.group_code ?? null,
+                        group_code: groupCode,
+                        group_members: groupMembers,
                         license_number: data.extractedLicenseNumber ?? null,
                         latitude: data.position?.latitude ?? null,
                         longitude: data.position?.longitude ?? null,
@@ -233,6 +316,7 @@ export const DataTable = () => {
                 "Strażnik": item.controller_name ? item.controller_name : null,
                 "ID Strażnika": item.controller_email ? item.controller_email.split("@")[0] : null,
                 "Kod grupy": item.group_code ? item.group_code : null,
+                "Strażnicy grupy": item.group_members && item.group_members.length > 0 ? item.group_members.join(", ") : null,
                 "Zezwolenie": item.license_number ? item.license_number : null,
                 "Koło": item.association_club_name ? item.association_club_name : null,
                 "Szerokość geograficzna": item.latitude ? item.latitude : null,
@@ -379,6 +463,7 @@ export const DataTable = () => {
                                 ID Strażnika {sortConfig.key === 'controller_email' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}
                             </th>
                             <th>Kod grupy</th>
+                            <th>Strażnicy grupy</th>
                             <th>Zezwolenie</th>
                             <th>Koło</th>
                             <th>Pozycja</th>
@@ -393,6 +478,7 @@ export const DataTable = () => {
                                 <td>{item.controller_name}</td>
                                 <td>{item.controller_email}</td>
                                 <td>{item.group_code}</td>
+                                <td>{item.group_members && item.group_members.length > 0 ? item.group_members.join(", ") : "-"}</td>
                                 <td>{item.license_number}</td>
                                 <td>{item.association_club_name}</td>
                                 <td>{item.latitude != null && item.longitude != null ? (

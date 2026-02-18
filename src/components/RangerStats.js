@@ -46,26 +46,80 @@ export const RangerStats = () => {
             const currentYear = now.getFullYear();
             const previousYear = currentYear - 1;
             const rangerData = {};
+            const userInfoCache = new Map();
+            const groupUsersCache = new Map();
+
+            const getUserInfo = async (userId) => {
+                if (!userId) return { name: "Nieznany", email: "Brak e-maila" };
+                if (userInfoCache.has(userId)) return userInfoCache.get(userId);
+                try {
+                    const userDocRef = doc(db, "users", userId);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        const email = userData.email ?? "Brak e-maila";
+                        const name = userData.displayName || userData.name || userData.fullName || email.split("@")[0];
+                        const info = { name, email: email.split("@")[0] };
+                        userInfoCache.set(userId, info);
+                        return info;
+                    }
+                } catch (error) {
+                    console.error(`Błąd pobierania danych użytkownika dla ID: ${userId}`, error);
+                }
+                const fallback = { name: "Nieznany", email: "Brak e-maila" };
+                userInfoCache.set(userId, fallback);
+                return fallback;
+            };
+
+            const getGroupUsers = async (groupCode) => {
+                const normalized = typeof groupCode === "string" ? groupCode.trim() : groupCode;
+                if (!normalized || !normalized.startsWith("GRUPA_")) return [];
+                if (groupUsersCache.has(normalized)) return groupUsersCache.get(normalized);
+                try {
+                    const groupDoc = await getDoc(doc(db, "ssr_groups", normalized));
+                    if (!groupDoc.exists()) {
+                        groupUsersCache.set(normalized, []);
+                        return [];
+                    }
+                    const usersArray = groupDoc.data()?.users || [];
+                    groupUsersCache.set(normalized, usersArray);
+                    return usersArray;
+                } catch (error) {
+                    console.error(`Błąd pobierania użytkowników grupy dla kodu: ${normalized}`, error);
+                }
+                const fallback = [];
+                groupUsersCache.set(normalized, fallback);
+                return fallback;
+            };
+
+            const getGroupMemberIdsForDate = async (groupCode, controlDate) => {
+                if (!controlDate) return [];
+                const users = await getGroupUsers(groupCode);
+                if (!users.length) return [];
+                const dateKey = controlDate.toISOString().slice(0, 10);
+                const memberIds = users
+                    .filter((entry) => {
+                        const entryId = entry?.id || entry?.uid;
+                        if (!entryId) return false;
+                        const joined = entry?.joined?.toDate ? entry.joined.toDate() : entry?.joined ? new Date(entry.joined) : null;
+                        if (!joined) return false;
+                        return joined.toISOString().slice(0, 10) === dateKey;
+                    })
+                    .map((entry) => entry?.id || entry?.uid)
+                    .filter(Boolean);
+                return Array.from(new Set(memberIds));
+            };
 
             await Promise.all(querySnapshot.docs.map(async (document) => {
                 const data = document.data();
                 const ranger = data.controller_name || "Nieznany";
-                const rangerID = data.controller_id || "Nieznany";
-                let email = null;
+                const rangerID = data.controller_id ?? null;
                 const isSuccess = data.is_success ?? false;
                 const controlDate = data.control_date?.toDate() ?? null;
+                const groupCode = typeof data.group_code === "string" ? data.group_code.trim() : data.group_code ?? "";
 
-                if (rangerID) {
-                    try {
-                        const userDocRef = doc(db, "users", rangerID);
-                        const userDocSnap = await getDoc(userDocRef);
-                        if (userDocSnap.exists()) {
-                            email = userDocSnap.data().email ?? "Brak e-maila";
-                        }
-                    } catch (error) {
-                        console.error(`Błąd pobierania e-maila dla ID: ${rangerID}`, error);
-                    }
-                }
+                const rangerKey = rangerID || ranger;
+                const rangerInfo = await getUserInfo(rangerID);
 
                 // Include current year and previous year data
                 if (!controlDate) return;
@@ -73,19 +127,45 @@ export const RangerStats = () => {
                 if (year !== currentYear && year !== previousYear) return;
                 if (regionName !== "all" && data.association_name !== regionName) return;
 
-                if (!rangerData[ranger]) {
-                    rangerData[ranger] = {
+                if (!rangerData[rangerKey]) {
+                    rangerData[rangerKey] = {
                         name: ranger,
-                        email: email ? email.split("@")[0] : "Brak e-maila",
+                        email: rangerInfo.email || "Brak e-maila",
                         controlResults: [],
                     };
                 }
 
-                rangerData[ranger].controlResults.push({
+                rangerData[rangerKey].controlResults.push({
                     date: controlDate,
                     isSuccess,
-                    group_code: data.group_code ?? "",
+                    group_code: groupCode,
+                    isGroupMember: false,
                 });
+
+                if (groupCode.startsWith("GRUPA_")) {
+                    const groupUserIds = await getGroupMemberIdsForDate(groupCode, controlDate);
+                    await Promise.all(
+                        groupUserIds
+                            .filter((userId) => userId && userId !== rangerID)
+                            .map(async (userId) => {
+                                const info = await getUserInfo(userId);
+                                const groupRangerKey = userId;
+                                if (!rangerData[groupRangerKey]) {
+                                    rangerData[groupRangerKey] = {
+                                        name: info.name || "Nieznany",
+                                        email: info.email || "Brak e-maila",
+                                        controlResults: [],
+                                    };
+                                }
+                                rangerData[groupRangerKey].controlResults.push({
+                                    date: controlDate,
+                                    isSuccess,
+                                    group_code: groupCode,
+                                    isGroupMember: true,
+                                });
+                            })
+                    );
+                }
             }));
 
             const formattedStats = Object.values(rangerData).map((ranger) => {
@@ -182,7 +262,7 @@ export const RangerStats = () => {
                         controlResults: filteredResults
                     };
                 })
-                .filter(ranger => ranger.totalControls > 0);
+                .filter(ranger => ranger.totalControls > 0 || ranger.groupPatrolDays > 0 || ranger.patrolDays > 0);
 
             setFilteredStats(filtered);
             setCurrentPage(1);

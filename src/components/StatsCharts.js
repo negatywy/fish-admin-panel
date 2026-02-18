@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import { db, auth } from "../config/firebase";
 import { useFilters } from "../context/FilterContext";
 import { Bar } from "react-chartjs-2";
@@ -91,22 +91,62 @@ export const StatsCharts = () => {
             // Aggregate data by time period
             const aggregatedData = {};
             const rangerPatrolDays = {}; // Track patrol days per ranger per label
+            const groupUsersCache = new Map();
 
-            querySnapshot.docs.forEach((document) => {
+            const getGroupUsers = async (groupCode) => {
+                const normalized = typeof groupCode === "string" ? groupCode.trim() : groupCode;
+                if (!normalized || !normalized.startsWith("GRUPA_")) return [];
+                if (groupUsersCache.has(normalized)) return groupUsersCache.get(normalized);
+                try {
+                    const groupDoc = await getDoc(doc(db, "ssr_groups", normalized));
+                    if (!groupDoc.exists()) {
+                        groupUsersCache.set(normalized, []);
+                        return [];
+                    }
+                    const usersArray = groupDoc.data()?.users || [];
+                    groupUsersCache.set(normalized, usersArray);
+                    return usersArray;
+                } catch (error) {
+                    console.error(`Error fetching group users for code: ${normalized}`, error);
+                }
+                const fallback = [];
+                groupUsersCache.set(normalized, fallback);
+                return fallback;
+            };
+
+            const getGroupMemberIdsForDate = async (groupCode, controlDate) => {
+                if (!controlDate) return [];
+                const users = await getGroupUsers(groupCode);
+                if (!users.length) return [];
+                const dateKey = controlDate.toISOString().slice(0, 10);
+                const memberIds = users
+                    .filter((entry) => {
+                        const entryId = entry?.id || entry?.uid;
+                        if (!entryId) return false;
+                        const joined = entry?.joined?.toDate ? entry.joined.toDate() : entry?.joined ? new Date(entry.joined) : null;
+                        if (!joined) return false;
+                        return joined.toISOString().slice(0, 10) === dateKey;
+                    })
+                    .map((entry) => entry?.id || entry?.uid)
+                    .filter(Boolean);
+                return Array.from(new Set(memberIds));
+            };
+
+            for (const document of querySnapshot.docs) {
                 const data = document.data();
                 const controlDate = data.control_date?.toDate();
                 
-                if (!controlDate) return;
+                if (!controlDate) continue;
                 
                 // Filter by region
-                if (regionName !== "all" && data.association_name !== regionName) return;
+                if (regionName !== "all" && data.association_name !== regionName) continue;
 
                 // Filter by date range
                 if (cutoffDate) {
                     if (endDate) {
-                        if (controlDate < cutoffDate || controlDate > endDate) return;
+                        if (controlDate < cutoffDate || controlDate > endDate) continue;
                     } else {
-                        if (controlDate < cutoffDate) return;
+                        if (controlDate < cutoffDate) continue;
                     }
                 }
 
@@ -141,6 +181,18 @@ export const StatsCharts = () => {
                 }
                 rangerPatrolDays[rangerLabelKey].add(dateKey);
 
+                const groupCode = typeof data.group_code === "string" ? data.group_code.trim() : data.group_code ?? "";
+                if (groupCode.startsWith("GRUPA_")) {
+                    const groupMemberIds = await getGroupMemberIdsForDate(groupCode, controlDate);
+                    groupMemberIds.forEach((memberId) => {
+                        const memberLabelKey = `${label}::${memberId}`;
+                        if (!rangerPatrolDays[memberLabelKey]) {
+                            rangerPatrolDays[memberLabelKey] = new Set();
+                        }
+                        rangerPatrolDays[memberLabelKey].add(dateKey);
+                    });
+                }
+
                 // Count controls
                 aggregatedData[label].controls += 1;
 
@@ -148,7 +200,7 @@ export const StatsCharts = () => {
                 if (data.is_success === false) {
                     aggregatedData[label].rejectedControls += 1;
                 }
-            });
+            }
 
             // Calculate total patrol days per label by summing unique days per ranger
             const labelPatrolDays = {};
