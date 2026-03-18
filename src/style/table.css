@@ -72,6 +72,13 @@ tr.selected {
     color: white;
 }
 
+.default-btn.active {
+    background-color: #145a24;
+    color: white;
+    font-weight: 600;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .pagination-btn {
     border: none;
     padding: 0.5rem 0.625rem 0.1875rem 0.625rem;

@@ -109,7 +109,7 @@ export const Konfigurator = () => {
         try {
             // Verify password hash
             const passwordHash = await hashPassword(password);
-            if (passwordHash !== 'd81560b1f1b7c6ae4d607fde83bb810d1ed6c77c63fc35ac5469be95a6339d28') {
+            if (passwordHash !== '422c8caff7d41da675c6743c74bc14af1b850c252e74b95017045ceca46a0bdd') {
                 alert("Nieprawidłowe hasło");
                 setAdding(false);
                 return;
@@ -152,7 +152,7 @@ export const Konfigurator = () => {
         try {
             // Verify password hash
             const passwordHash = await hashPassword(password);
-            if (passwordHash !== 'd81560b1f1b7c6ae4d607fde83bb810d1ed6c77c63fc35ac5469be95a6339d28') {
+            if (passwordHash !== '422c8caff7d41da675c6743c74bc14af1b850c252e74b95017045ceca46a0bdd') {
                 alert("Nieprawidłowe hasło");
                 setDeleting(false);
                 return;

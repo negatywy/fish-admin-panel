@@ -6,7 +6,7 @@ function generateRandomPassword(length = 12) {
 
 const prefixMap = {
   "GMUe0Hd56WJ7U0HQ3qpa": "MAZSSR_", // Okręg Mazowiecki
-  "hpAlqBYPhqCdlSJVc9RG": "TBGA_"    // Okręg Tarnobrzeg
+  "hpAlqBYPhqCdlSJVc9RG": "TBGSSR_"  // Okręg Tarnobrzeg
 };
 
 async function createUsersWithPattern(

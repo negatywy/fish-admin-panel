@@ -9,6 +9,7 @@ import { StatsCharts } from "./StatsCharts";
 import { RangerStats } from "./RangerStats";
 import UserManagement from "./UserManagement";
 import { Konfigurator } from "./Konfigurator";
+import { RemoveDuplicates } from "./RemoveDuplicates";
 import { useFilters } from "../context/FilterContext";
 import "../style/App.css";
 import "../style/table.css";
@@ -60,7 +61,7 @@ export const Dashboard = () => {
 
     return (
         <div className="dashboard-container">
-            <SidebarMenu setActiveComponent={setActiveComponent} />
+            <SidebarMenu setActiveComponent={setActiveComponent} activeComponent={activeComponent} />
             <div className="main-content">
                 <div className="topbar">
                     <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: '1rem', color: '#246928', fontWeight: 'bold', fontSize: '1.25rem'}}>
@@ -82,6 +83,7 @@ export const Dashboard = () => {
                 {activeComponent === "rangerStats" && <RangerStats />}
                 {activeComponent === "userManagement" && <UserManagement />}
                 {activeComponent === "konfigurator" && <Konfigurator />}
+                {activeComponent === "removeDuplicates" && <RemoveDuplicates />}
             </div>
         </div>
     );

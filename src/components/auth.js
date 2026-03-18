@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/ranger_logo.jpg";
+import logo from "../assets/ranger_logo.png";
 import "../style/auth.css";
 import { QRCodeSVG } from "qrcode.react";
 import { collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
@@ -78,7 +78,7 @@ export const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)} />
                     {error && <p className="error-message">{error}</p>}
                     <button className="auth-button" onClick={login}>Zaloguj się</button>
-                    <button className="auth-button" onClick={generateQR}>Generuj patrol</button>
+                    {/* <button className="auth-button" onClick={generateQR}>Generuj patrol</button> */}
                 </div>                    
                     {qrCode && (
                         <div className="auth-content">

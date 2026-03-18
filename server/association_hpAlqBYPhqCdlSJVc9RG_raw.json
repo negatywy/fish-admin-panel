@@ -1,0 +1,33 @@
+{
+  "name": "Okręg PZW w Tarnobrzegu",
+  "license_order_url": "https://pzwtarnobrzeg.eparki.pl/",
+  "is_selling_licenses": true,
+  "email_addresses": [
+    {
+      "name": "E-mail",
+      "value": "opzw_tarnobrzeg@wp.pl"
+    }
+  ],
+  "phone_numbers": [
+    {
+      "name": "Telefon",
+      "value": "15 822 46 47"
+    }
+  ],
+  "address": {
+    "city": "Tarnobrzeg",
+    "street": "ul. Przy Zalewie 2",
+    "postal_code": "39-400"
+  },
+  "service_fee_percentage": 5,
+  "opening_hours": [],
+  "sites": [
+    {}
+  ],
+  "merchant_id": 268850,
+  "is_selling_association_fees": true,
+  "licensePrefix": "TRBG/",
+  "is_entry_fee_required": true,
+  "licenseSuffix": "/2025",
+  "licenseCounter": 10111
+}

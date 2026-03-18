@@ -1,0 +1,50 @@
+{
+  "name": "Okręg Mazowiecki Polskiego Związku Wędkarskiego w Warszawie",
+  "license_order_url": "https://ompzw-m.eparki.pl/bilet_wstepu/31",
+  "merchant_id": 232359,
+  "is_selling_association_fees": true,
+  "service_fee_percentage": 4.5,
+  "licensePrefix": "WA-E",
+  "address": {
+    "city": "Warszawa",
+    "street": "ul. Twarda 42 ",
+    "postal_code": "00-831"
+  },
+  "email_addresses": [
+    {
+      "name": "Biuro Zarządu Okręgu Mazowieckiego",
+      "value": "biuro@ompzw.pl"
+    }
+  ],
+  "opening_hours": [
+    {
+      "name": "poniedziałek",
+      "value": "10:00 - 18:00"
+    },
+    {
+      "name": "wtorek - piątek",
+      "value": "7:30 - 15:30"
+    }
+  ],
+  "sites": [
+    {}
+  ],
+  "phone_numbers": [
+    {
+      "name": "kontakt",
+      "value": "22 620 51 96"
+    },
+    {
+      "name": "",
+      "value": "22 654 57 05"
+    },
+    {
+      "name": "",
+      "value": "22 654 57 05"
+    }
+  ],
+  "is_selling_licenses": true,
+  "is_entry_fee_required": true,
+  "licenseSuffix": "/2025",
+  "licenseCounter": 65897
+}

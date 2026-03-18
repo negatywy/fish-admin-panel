@@ -14,16 +14,90 @@ const associationOptions = [
   {
     id: "hpAlqBYPhqCdlSJVc9RG",
     name: "Okręg PZW w Tarnobrzegu",
-    prefix: "TBGA_"
+    prefix: "TBGSSR_"
   }
 ];
 
-const CreateUser = () => {
+const CreateUser = ({ onOperationComplete }) => {
     const [emailNo, setEmailNo] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [association, setAssociation] = useState(associationOptions[0].id);
     const [status, setStatus] = useState("");
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [nextAvailable, setNextAvailable] = useState("");
+    const [fetchingNext, setFetchingNext] = useState(false);
+
+    // Fetch next available login number when association changes
+    useEffect(() => {
+        const fetchNextAvailable = async () => {
+            setFetchingNext(true);
+            try {
+                const assocObj = associationOptions.find(opt => opt.id === association);
+                const prefix = assocObj ? assocObj.prefix : "TEST_";
+                
+                console.log(`🔍 Fetching users for prefix: ${prefix}`);
+                
+                // Query users collection for this association
+                const usersSnapshot = await getDocs(collection(db, "users"));
+                
+                console.log(`📊 Total users in database: ${usersSnapshot.size}`);
+                
+                let maxNumber = 0;
+                const domain = "@ranger.pl";
+                const lowerDomain = domain.toLowerCase();
+                const lowerPrefix = prefix.toLowerCase(); // Firebase Auth stores emails as lowercase
+                let matchCount = 0;
+                
+                const foundNumbers = []; // Track all numbers for debugging
+                
+                usersSnapshot.forEach((doc) => {
+                    const userData = doc.data();
+                    const email = userData.email;
+                    
+                    // Debug specific emails
+                    if (email && (email.includes('0353') || email.includes('0354'))) {
+                        console.log(`🔍 Checking ${email}:`);
+                        console.log(`   → Lowercase: ${email.toLowerCase()}`);
+                        console.log(`   → Starts with '${lowerPrefix}': ${email.toLowerCase().startsWith(lowerPrefix)}`);
+                    }
+                    
+                    if (email && email.toLowerCase().startsWith(lowerPrefix)) {
+                        matchCount++;
+                        // Extract number from email like "mazssr_0353@ranger.pl"
+                        // Remove prefix and domain to get just the number
+                        const lowerEmail = email.toLowerCase();
+                        const emailPart = lowerEmail.replace(lowerPrefix, "").replace(lowerDomain, "");
+                        const num = parseInt(emailPart, 10);
+                        if (!isNaN(num)) {
+                            foundNumbers.push({ email: email, number: num });
+                            if (num > maxNumber) {
+                                maxNumber = num;
+                            }
+                        }
+                    }
+                });
+                
+                // Sort and show top 10 to debug the missing 353/354
+                const topNumbers = foundNumbers
+                    .sort((a, b) => b.number - a.number)
+                    .slice(0, 10);
+                console.log(`✅ Matches for ${prefix}: ${matchCount}, Max number: ${maxNumber}`);
+                console.log(`📊 Top 10 highest numbers:`, topNumbers);
+                
+                const next = (maxNumber + 1).toString().padStart(4, '0');
+                console.log(`➡️  Next available: ${next}`);
+                setNextAvailable(next);
+                setEmailNo(next); // Set as default value
+            } catch (error) {
+                console.error("Error fetching next available login:", error);
+                setNextAvailable("");
+            } finally {
+                setFetchingNext(false);
+            }
+        };
+
+        fetchNextAvailable();
+    }, [association]);
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -34,7 +108,7 @@ const CreateUser = () => {
             return;
         }
 
-        setLoading(false);
+        setLoading(true);
 
         const assocObj = associationOptions.find(opt => opt.id === association);
         const associationName = assocObj ? assocObj.name : "";
@@ -87,9 +161,10 @@ const CreateUser = () => {
                     console.warn(`⚠️ Pominięto duplikat: ${user.email}`);
                     continue;
                 }
+                const action = user.repaired ? "repair" : "create";
                 await setDoc(doc(collection(db, "user_mngmnt_logs")), {
                     date: serverTimestamp(),
-                    action: "create",
+                    action: action,
                     admin: adminEmail,
                     user: user.email
                 });
@@ -97,8 +172,12 @@ const CreateUser = () => {
 
             // Build status message
             const successMsgs = data.users
-                .filter(u => !u.skipped && !u.error)
+                .filter(u => !u.skipped && !u.error && !u.repaired)
                 .map(u => `✅ ${u.email}, hasło: ${u.password}`);
+
+            const repairedMsgs = data.users
+                .filter(u => u.repaired)
+                .map(u => `🔧 ${u.email} naprawiony (istniał w Auth ale nie w bazie)`);
 
             const skippedMsgs = data.users
                 .filter(u => u.skipped)
@@ -108,10 +187,32 @@ const CreateUser = () => {
                 .filter(u => u.error)
                 .map(u => `❌ Błąd przy ${u.email}: ${u.error}`);
 
-            setStatus([...successMsgs, ...skippedMsgs, ...errorMsgs].join("\n"));
-            setEmailNo("");
+            setStatus([...successMsgs, ...repairedMsgs, ...skippedMsgs, ...errorMsgs].join("\n"));
             setDisplayName("");
-            setAssociation(associationOptions[0].id);
+            
+            // Trigger log refresh
+            if (onOperationComplete) {
+                onOperationComplete();
+            }
+            
+            // Calculate next available number based on what was just created
+            // Extract the highest number from successfully created users
+            let maxCreated = 0;
+            
+            // Check what numbers were just used in this creation
+            emailIds.forEach(id => {
+                const num = parseInt(id, 10);
+                if (!isNaN(num) && num > maxCreated) {
+                    maxCreated = num;
+                }
+            });
+            
+            // Set next available to the highest created + 1
+            if (maxCreated > 0) {
+                const next = (maxCreated + 1).toString().padStart(4, '0');
+                setNextAvailable(next);
+                setEmailNo(next);
+            }
 
         } catch (err) {
             console.error(err);
@@ -126,12 +227,28 @@ const CreateUser = () => {
             <h2>Tworzenie nowego użytkownika</h2>
             <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 12}}>
                 <label>
+                    Okręg:
+                    <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
+                            style={{marginLeft: 8, width: 420}}>
+                        {associationOptions.map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.name}</option>
+                        ))}
+                    </select>
+                </label>
+                <label>
                     Login: 
+                    {fetchingNext && <span style={{marginLeft: 8, color: "#666", fontSize: 14}}>(sprawdzanie...)</span>}
+                    {!fetchingNext && nextAvailable && (
+                        <span style={{marginLeft: 8, color: "#246928", fontSize: 14, fontWeight: 600}}>
+                            (następny dostępny: {nextAvailable})
+                        </span>
+                    )}
                         <input
                             type="text"
                             value={emailNo}
                             onChange={e => setEmailNo(e.target.value)}
-                            disabled={loading}
+                            disabled={loading || fetchingNext}
+                            placeholder={nextAvailable}
                             style={{marginLeft: 8, width: 150}}
                         />
                 </label>
@@ -145,15 +262,6 @@ const CreateUser = () => {
                         style={{marginLeft: 8, width: 250}}
                     />
                 </label>
-                <label>
-                    Okręg:
-                    <select value={association} onChange={e => setAssociation(e.target.value)} disabled={loading} 
-                            style={{marginLeft: 8, width: 420}}>
-                        {associationOptions.map(opt => (
-                            <option key={opt.id} value={opt.id}>{opt.name}</option>
-                        ))}
-                    </select>
-                </label>
                 <button className="default-btn" type="submit" disabled={loading} 
                             style={{marginTop: 8, width: 480}}>Dodaj użytkownika</button>
             </form>
@@ -163,12 +271,43 @@ const CreateUser = () => {
                     <div style={{marginTop: 16, color: "#246928", fontWeight: 600, fontSize: 18}}>ładowanie...</div>
                 </div>
             )}
-            {status && <div style={{ color: status.includes("✅") ? "green" : "red", marginTop: 8 }}>{status}</div>}
+            {status && (
+                <div style={{ marginTop: 16 }}>
+                    {status.includes("✅") && (
+                        <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: 18, fontWeight: 600, color: "#246928", marginBottom: 8 }}>Dodano:</div>
+                            <div style={{ 
+                                fontSize: 16, 
+                                color: "green", 
+                                backgroundColor: "#f0f8f0", 
+                                padding: 12, 
+                                borderRadius: 4,
+                                border: "1px solid #c3e6cb",
+                                whiteSpace: "pre-wrap",
+                                fontFamily: "monospace"
+                            }}>{status}</div>
+                            <button 
+                                className="default-btn" 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(status);
+                                    alert("Skopiowano do schowka!");
+                                }}
+                                style={{ marginTop: 8 }}
+                            >
+                                📋 Kopiuj do schowka
+                            </button>
+                        </div>
+                    )}
+                    {!status.includes("✅") && (
+                        <div style={{ color: "red", marginTop: 8, fontSize: 16 }}>{status}</div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
 
-const DeleteUser = () => {
+const DeleteUser = ({ onOperationComplete }) => {
     const [login, setLogin] = useState("");
     const [status, setStatus] = useState("");
     const [loading, setLoading] = useState(false);
@@ -248,6 +387,11 @@ const DeleteUser = () => {
             const failMsgs = data.results.filter(r => !r.success).map(r => `❌ ${r.email}: ${r.message}`);
 
             setStatus([...successMsgs, ...failMsgs].join("\n"));
+            
+            // Trigger log refresh
+            if (onOperationComplete) {
+                onOperationComplete();
+            }
 
         } catch (err) {
             console.error(err);
@@ -292,12 +436,43 @@ const DeleteUser = () => {
                     <div style={{marginLeft: 16, color: "#246928"}}>ładowanie...</div>
                 </div>
             )}
-            {status && <div style={{ color: status.includes("✅") ? "green" : "red" }}>{status}</div>}
+            {status && (
+                <div style={{ marginTop: 16 }}>
+                    {status.includes("✅") && (
+                        <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: 18, fontWeight: 600, color: "#d32f2f", marginBottom: 8 }}>Usunięto:</div>
+                            <div style={{ 
+                                fontSize: 16, 
+                                color: status.includes("❌") ? "#d32f2f" : "green", 
+                                backgroundColor: status.includes("❌") ? "#ffebee" : "#f0f8f0", 
+                                padding: 12, 
+                                borderRadius: 4,
+                                border: status.includes("❌") ? "1px solid #ef9a9a" : "1px solid #c3e6cb",
+                                whiteSpace: "pre-wrap",
+                                fontFamily: "monospace"
+                            }}>{status}</div>
+                            <button 
+                                className="default-btn" 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(status);
+                                    alert("Skopiowano do schowka!");
+                                }}
+                                style={{ marginTop: 8 }}
+                            >
+                                📋 Kopiuj do schowka
+                            </button>
+                        </div>
+                    )}
+                    {!status.includes("✅") && (
+                        <div style={{ color: "red", marginTop: 8, fontSize: 16 }}>{status}</div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
 
-const UserLogs = () => {
+const UserLogs = ({ refreshTrigger }) => {
     const [logs, setLogs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -323,7 +498,7 @@ const UserLogs = () => {
             setLoading(false);
         };
         fetchLogs();
-    }, []);
+    }, [refreshTrigger]);
 
     useEffect(() => {
         const updateRowsPerPage = () => {
@@ -390,14 +565,19 @@ const UserLogs = () => {
             alert("Brak logów do pobrania.");
             return;
         }
+        const actionTranslations = {
+            "delete": "usuń",
+            "create": "utwórz",
+            "repair": "naprawa"
+        };
         const csvData = filteredLogs.map(log => ({
             "Data": log.date?.toDate ? log.date.toDate().toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak",
-            "Akcja": log.action || "-",
+            "Akcja": actionTranslations[log.action] || log.action || "-",
             "Admin": log.admin || "-",
             "Użytkownik": log.user || "-"
         }));
         import("papaparse").then(Papa => {
-            const csv = Papa.unparse(csvData);
+            const csv = Papa.unparse(csvData, { delimiter: ";" });
             const utf8BOM = "\uFEFF" + csv;
             const blob = new Blob([utf8BOM], { type: "text/csv;charset=utf-8;" });
             import("file-saver").then(module => {
@@ -412,6 +592,23 @@ const UserLogs = () => {
     const currentRows = filteredLogs.slice(indexOfFirstRow, indexOfLastRow);
     const totalPages = Math.ceil(filteredLogs.length / rowsPerPage);
 
+    // Helper function to translate and style action text
+    const formatAction = (action) => {
+        const actionTranslations = {
+            "delete": "usuń",
+            "create": "utwórz",
+            "repair": "naprawa"
+        };
+        const translatedAction = actionTranslations[action] || action || "-";
+        const isDelete = action === "delete";
+        
+        return (
+            <span style={{ color: isDelete ? '#dc3545' : 'inherit', fontWeight: isDelete ? '600' : 'normal' }}>
+                {translatedAction}
+            </span>
+        );
+    };
+
 
     if (loading) {
         return (
@@ -425,7 +622,6 @@ const UserLogs = () => {
 
     return (
         <div>
-            <h1>Zarządzanie użytkownikami</h1>
             <div style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <label>Według daty: </label>
@@ -467,8 +663,9 @@ const UserLogs = () => {
                     <label>Typ akcji: </label>
                     <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} style={{ minWidth: 100 }}>
                         <option value="">Wszystkie</option>
-                        <option value="delete">Usunięcie</option>
-                        <option value="create">Utworzenie</option>
+                        <option value="delete">Usuń</option>
+                        <option value="create">Utwórz</option>
+                        <option value="repair">Naprawa</option>
                     </select>
                     <label>Według admina: </label>
                     <select value={adminFilter} onChange={e => setAdminFilter(e.target.value)} style={{ minWidth: 100 }}>
@@ -501,7 +698,7 @@ const UserLogs = () => {
                         {currentRows.map(log => (
                             <tr key={log.id}>
                                 <td>{log.date?.toDate ? log.date.toDate().toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak"}</td>
-                                <td>{log.action || "-"}</td>
+                                <td>{formatAction(log.action)}</td>
                                 <td>{log.admin || "-"}</td>
                                 <td>{log.user || "-"}</td>
                             </tr>
@@ -520,15 +717,29 @@ const UserLogs = () => {
 
 const UserManagement = () => {
     const [view, setView] = useState("none");
+    const [logRefreshTrigger, setLogRefreshTrigger] = useState(0);
+    
+    const refreshLogs = () => {
+        setLogRefreshTrigger(prev => prev + 1);
+    };
+
+    const currentUserEmail = auth.currentUser?.email;
+    const isOmpzwAdmin = currentUserEmail === "admin.ompzw@naturai.pl";
+    
     return (
         <div className="user-management">
             <h1>Zarządzanie użytkownikami</h1>
             <div style={{ marginBottom: 20 }}>
-                <button className="default-btn" onClick={() => setView("create")}>Utwórz nowego użytkownika</button>{" "}
-                <button className="default-btn" onClick={() => setView("delete")}>Usuń użytkownika</button>{" "}
-                {view === "create" && <CreateUser />}
-                {view === "delete" && <DeleteUser />}
-                <UserLogs />
+                {isOmpzwAdmin && (
+                    <>
+                        <button className="default-btn" onClick={() => setView("create")}>Utwórz nowego użytkownika</button>{" "}
+                        <button className="default-btn" onClick={() => setView("delete")}>Usuń użytkownika</button>{" "}
+                        {view === "create" && <CreateUser onOperationComplete={refreshLogs} />}
+                        {view === "delete" && <DeleteUser onOperationComplete={refreshLogs} />}
+                    </>
+                )}
+                <h2 style={{ marginTop: 32, marginBottom: 16 }}>Dziennik zarządzania użytkownikami</h2>
+                <UserLogs refreshTrigger={logRefreshTrigger} />
             </div>
         </div>
     );

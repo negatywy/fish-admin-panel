@@ -120,58 +120,53 @@ export const DataTable = () => {
         const now = new Date();
         const currentYear = now.getFullYear();
 
-        filtered = filtered.filter(item => {
-            const itemDate = item.control_date ? new Date(item.control_date) : null;
-            return itemDate && itemDate.getFullYear() === currentYear;
-        });
-        
+        // Pre-filter to current year for performance, unless user specifically wants previous year
         if (dateFilter !== "previousYear") {
-            const now = new Date();
-            let cutoffDate;
-            let endDate;
-    
-            if (dateFilter === "lastWeek") {
-                cutoffDate = new Date();
-                cutoffDate.setDate(now.getDate() - 7);
-            } else if (dateFilter === "currentMonth") {
-                // First day of current month
-                cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            } else if (dateFilter === "previousMonth") {
-                // First day of previous month
-                cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                // Last day of previous month
-                endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-            } else if (dateFilter === "currentYear") {
-                cutoffDate = new Date(now.getFullYear(), 0, 1);
-            } else if (dateFilter === "previousYear") {
-                // First day of previous year
-                cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
-                // Last day of previous year
-                endDate = new Date(now.getFullYear() - 1, 11, 31);
-            } else if (dateFilter === "custom") {
-                if (customStartDate) {
-                    cutoffDate = new Date(customStartDate);
-                    cutoffDate.setHours(0, 0, 0, 0);
-                    endDate = new Date(customStartDate);
-                    endDate.setHours(23, 59, 59, 999);
-                }
+            filtered = filtered.filter(item => {
+                const itemDate = item.control_date ? new Date(item.control_date) : null;
+                return itemDate && itemDate.getFullYear() === currentYear;
+            });
+        }
+
+        // Apply date filter
+        let cutoffDate;
+        let endDate;
+
+        if (dateFilter === "lastWeek") {
+            cutoffDate = new Date();
+            cutoffDate.setDate(now.getDate() - 7);
+        } else if (dateFilter === "currentMonth") {
+            // First day of current month
+            cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (dateFilter === "previousMonth") {
+            // First day of previous month
+            cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            // Last day of previous month
+            endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        } else if (dateFilter === "currentYear") {
+            cutoffDate = new Date(now.getFullYear(), 0, 1);
+        } else if (dateFilter === "previousYear") {
+            // First day of previous year
+            cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
+            // Last day of previous year
+            endDate = new Date(now.getFullYear() - 1, 11, 31);
+        } else if (dateFilter === "custom") {
+            if (customStartDate) {
+                cutoffDate = new Date(customStartDate);
+                cutoffDate.setHours(0, 0, 0, 0);
+                endDate = new Date(customStartDate);
+                endDate.setHours(23, 59, 59, 999);
             }
-    
+        }
+
+        // Apply date filter only if cutoffDate is defined
+        if (cutoffDate) {
             filtered = filtered.filter(item => {
                 const itemDate = item.control_date ? new Date(item.control_date) : null;
                 if ((dateFilter === "previousMonth" || dateFilter === "previousYear" || dateFilter === "custom") && endDate) {
                     return itemDate && itemDate >= cutoffDate && itemDate <= endDate;
                 }
                 return itemDate && itemDate >= cutoffDate;
-            });
-        } else {
-            // For previousYear, filter the entire previous year
-            const now = new Date();
-            const cutoffDate = new Date(now.getFullYear() - 1, 0, 1);
-            const endDate = new Date(now.getFullYear() - 1, 11, 31);
-            filtered = filtered.filter(item => {
-                const itemDate = item.control_date ? new Date(item.control_date) : null;
-                return itemDate && itemDate >= cutoffDate && itemDate <= endDate;
             });
         }
     
@@ -236,7 +231,7 @@ export const DataTable = () => {
             };
         });
 
-        const csv = Papa.unparse(csvData);
+        const csv = Papa.unparse(csvData, { delimiter: ";" });
         const utf8BOM = "\uFEFF" + csv;
         const blob = new Blob([utf8BOM], { type: "text/csv;charset=utf-8;" });
         saveAs(blob, `kontrole_${dateFilter}.csv`);
@@ -352,11 +347,11 @@ export const DataTable = () => {
                             <th>Data kontroli</th>
                             <th>Strażnik</th>
                             <th onClick={() => handleSort('controller_email')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                                ID Strażnika {sortConfig.key === 'controller_email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                ID Strażnika {sortConfig.key === 'controller_email' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}
                             </th>
                             <th>Kod grupy</th>
                             <th>Zezwolenie</th>
-                            <th>Koło</th>
+                            <th>Koło kontrol.</th>
                             <th>Pozycja</th>
                             <th>Wynik kontroli</th>
                             <th>Szczegóły kontroli</th>
