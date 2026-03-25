@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useFilters } from "../context/FilterContext";
-import { collection, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { auth } from "../config/firebase";
@@ -26,6 +26,8 @@ const CreateUser = ({ onOperationComplete }) => {
     const [loading, setLoading] = useState(false);
     const [nextAvailable, setNextAvailable] = useState("");
     const [fetchingNext, setFetchingNext] = useState(false);
+    const [userCount, setUserCount] = useState("1");
+    const [createdUsers, setCreatedUsers] = useState([]);
 
     // Fetch next available login number when association changes
     useEffect(() => {
@@ -102,6 +104,7 @@ const CreateUser = ({ onOperationComplete }) => {
     const handleCreate = async (e) => {
         e.preventDefault();
         setStatus("");
+        setCreatedUsers([]);
 
         if (!emailNo) {
             setStatus("Podaj nr lub zakres loginów użytkowników.");
@@ -110,14 +113,13 @@ const CreateUser = ({ onOperationComplete }) => {
 
         setLoading(true);
 
+        const apiUrl = process.env.REACT_APP_API_URL;
         const assocObj = associationOptions.find(opt => opt.id === association);
         const associationName = assocObj ? assocObj.name : "";
         const associationId = assocObj ? assocObj.id : "";
         const basePattern = assocObj ? assocObj.prefix : "TEST_";
 
         try {
-            const apiUrl = process.env.REACT_APP_API_URL;
-
             // multiple users support
             let emailIds = [];
             if (emailNo.includes("-")) {
@@ -133,7 +135,21 @@ const CreateUser = ({ onOperationComplete }) => {
             } else if (emailNo.includes(",")) {
                 emailIds = emailNo.split(",").map(n => n.trim());
             } else {
-                emailIds = [emailNo];
+                const count = parseInt(userCount, 10);
+                if (!isNaN(count) && count > 1) {
+                    const startNum = parseInt(emailNo, 10);
+                    if (isNaN(startNum)) {
+                        setStatus("Nieprawidłowy numer startowy.");
+                        setLoading(false);
+                        return;
+                    }
+                    const padLength = emailNo.length;
+                    emailIds = Array.from({ length: count }, (_, i) =>
+                        String(startNum + i).padStart(padLength, "0")
+                    );
+                } else {
+                    emailIds = [emailNo];
+                }
             }
 
             const res = await fetch(`${apiUrl}/create-users`, {
@@ -162,12 +178,17 @@ const CreateUser = ({ onOperationComplete }) => {
                     continue;
                 }
                 const action = user.repaired ? "repair" : "create";
-                await setDoc(doc(collection(db, "user_mngmnt_logs")), {
-                    date: serverTimestamp(),
-                    action: action,
-                    admin: adminEmail,
-                    user: user.email
-                });
+                if (apiUrl) {
+                    await fetch(`${apiUrl}/log-admin-action`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: action,
+                            admin: adminEmail,
+                            user: user.email
+                        })
+                    });
+                }
             }
 
             // Build status message
@@ -189,6 +210,11 @@ const CreateUser = ({ onOperationComplete }) => {
 
             setStatus([...successMsgs, ...repairedMsgs, ...skippedMsgs, ...errorMsgs].join("\n"));
             setDisplayName("");
+            setCreatedUsers(
+                data.users
+                    .filter(u => !u.skipped && !u.error)
+                    .map(u => ({ email: u.email, password: u.password || "" }))
+            );
             
             // Trigger log refresh
             if (onOperationComplete) {
@@ -222,6 +248,48 @@ const CreateUser = ({ onOperationComplete }) => {
         setLoading(false);
     };
 
+    const downloadCreatedUsersCSV = async () => {
+        if (createdUsers.length === 0) {
+            alert("Brak nowych użytkowników do pobrania.");
+            return;
+        }
+
+        const adminEmail = auth.currentUser?.email || "brak";
+        const adminPrefix = adminEmail.split("@")[0] || "admin";
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        const fileName = `dodani${adminPrefix}${dateStamp}.csv`;
+
+        const csvData = createdUsers.map(user => ({
+            "Email": user.email,
+            "Hasło": user.password
+        }));
+
+        const Papa = await import("papaparse");
+        const csv = Papa.unparse(csvData, { delimiter: ";" });
+        const utf8BOM = "\uFEFF" + csv;
+        const blob = new Blob([utf8BOM], { type: "text/csv;charset=utf-8;" });
+        const fileSaver = await import("file-saver");
+        const saveAs = fileSaver.saveAs || fileSaver.default;
+        saveAs(blob, fileName);
+
+        const apiUrl = process.env.REACT_APP_API_URL;
+        if (apiUrl) {
+            await fetch(`${apiUrl}/log-admin-action`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "download_csv",
+                    admin: adminEmail,
+                    user: `plik:${fileName} liczba:${createdUsers.length}`
+                })
+            });
+        }
+
+        if (onOperationComplete) {
+            onOperationComplete();
+        }
+    };
+
     return (
         <div>
             <h2>Tworzenie nowego użytkownika</h2>
@@ -236,7 +304,7 @@ const CreateUser = ({ onOperationComplete }) => {
                     </select>
                 </label>
                 <label>
-                    Login: 
+                    Login nr: 
                     {fetchingNext && <span style={{marginLeft: 8, color: "#666", fontSize: 14}}>(sprawdzanie...)</span>}
                     {!fetchingNext && nextAvailable && (
                         <span style={{marginLeft: 8, color: "#246928", fontSize: 14, fontWeight: 600}}>
@@ -251,6 +319,17 @@ const CreateUser = ({ onOperationComplete }) => {
                             placeholder={nextAvailable}
                             style={{marginLeft: 8, width: 150}}
                         />
+                </label>
+                <label>
+                    Ilość kont:
+                    <input
+                        type="number"
+                        min="1"
+                        value={userCount}
+                        onChange={e => setUserCount(e.target.value)}
+                        disabled={loading}
+                        style={{ marginLeft: 8, width: 80 }}
+                    />
                 </label>
                 <label>
                     Imię i nazwisko:
@@ -295,6 +374,13 @@ const CreateUser = ({ onOperationComplete }) => {
                                 style={{ marginTop: 8 }}
                             >
                                 📋 Kopiuj do schowka
+                            </button>
+                            <button
+                                className="default-btn"
+                                onClick={downloadCreatedUsersCSV}
+                                style={{ marginTop: 8, marginLeft: 8 }}
+                            >
+                                📄 Pobierz CSV
                             </button>
                         </div>
                     )}
@@ -373,13 +459,17 @@ const DeleteUser = ({ onOperationComplete }) => {
             // Save logs for each user
             const adminEmail = auth.currentUser?.email || "brak";
             for (const result of data.results) {
-                await setDoc(doc(collection(db, "user_mngmnt_logs")), {
-                    date: serverTimestamp(),
-                    action: "delete",
-                    admin: adminEmail,
-                    user: result.email,
-                    success: result.success
-                });
+                if (apiUrl) {
+                    await fetch(`${apiUrl}/log-admin-action`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "delete",
+                            admin: adminEmail,
+                            user: result.email
+                        })
+                    });
+                }
             }
 
             // Build status message
@@ -482,6 +572,8 @@ const UserLogs = ({ refreshTrigger }) => {
     const [adminFilter, setAdminFilter] = useState("");
     const [userFilter, setUserFilter] = useState("");
     const [loading, setLoading] = useState(true);
+    const currentAdminEmail = auth.currentUser?.email || "";
+    const isOmpzwAdmin = currentAdminEmail === "admin.ompzw@naturai.pl";
 
     useEffect(() => {
         const fetchLogs = async () => {
@@ -516,6 +608,9 @@ const UserLogs = ({ refreshTrigger }) => {
         let match = true;
         const logDate = log.date?.toDate ? log.date.toDate() : null;
         if (!logDate) return false;
+        if (!isOmpzwAdmin) {
+            match = match && (log.admin || "") === currentAdminEmail;
+        }
         const now = new Date();
         let cutoffDate = new Date();
         let endDate;
@@ -568,13 +663,17 @@ const UserLogs = ({ refreshTrigger }) => {
         const actionTranslations = {
             "delete": "usuń",
             "create": "utwórz",
-            "repair": "naprawa"
+            "repair": "naprawa",
+            "download_csv": "pobierz csv",
+            "download_csv_controls": "pobierz csv kontrole",
+            "download_csv_ranger_stats": "pobierz csv statystyki"
         };
         const csvData = filteredLogs.map(log => ({
             "Data": log.date?.toDate ? log.date.toDate().toLocaleString("pl-PL", { day: "numeric", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Brak",
             "Akcja": actionTranslations[log.action] || log.action || "-",
             "Admin": log.admin || "-",
-            "Użytkownik": log.user || "-"
+            "Użytkownik": log.user || "-",
+            "IP": log.ip || "-"
         }));
         import("papaparse").then(Papa => {
             const csv = Papa.unparse(csvData, { delimiter: ";" });
@@ -597,7 +696,10 @@ const UserLogs = ({ refreshTrigger }) => {
         const actionTranslations = {
             "delete": "usuń",
             "create": "utwórz",
-            "repair": "naprawa"
+            "repair": "naprawa",
+            "download_csv": "pobierz csv",
+            "download_csv_controls": "pobierz csv kontrole",
+            "download_csv_ranger_stats": "pobierz csv statystyki"
         };
         const translatedAction = actionTranslations[action] || action || "-";
         const isDelete = action === "delete";
@@ -666,6 +768,9 @@ const UserLogs = ({ refreshTrigger }) => {
                         <option value="delete">Usuń</option>
                         <option value="create">Utwórz</option>
                         <option value="repair">Naprawa</option>
+                        <option value="download_csv">Pobierz CSV</option>
+                        <option value="download_csv_controls">Pobierz CSV kontrole</option>
+                        <option value="download_csv_ranger_stats">Pobierz CSV statystyki</option>
                     </select>
                     <label>Według admina: </label>
                     <select value={adminFilter} onChange={e => setAdminFilter(e.target.value)} style={{ minWidth: 100 }}>
@@ -692,6 +797,7 @@ const UserLogs = ({ refreshTrigger }) => {
                             <th>Akcja</th>
                             <th>Admin</th>
                             <th>Użytkownik</th>
+                            <th>IP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -701,6 +807,7 @@ const UserLogs = ({ refreshTrigger }) => {
                                 <td>{formatAction(log.action)}</td>
                                 <td>{log.admin || "-"}</td>
                                 <td>{log.user || "-"}</td>
+                                <td>{log.ip || "-"}</td>
                             </tr>
                         ))}
                     </tbody>

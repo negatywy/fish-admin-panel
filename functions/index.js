@@ -43,4 +43,31 @@ app.post("/delete-users", async (req, res) => {
   }
 });
 
+app.post("/log-admin-action", async (req, res) => {
+  const { action, admin: adminEmail, user } = req.body || {};
+  if (!action || !adminEmail) {
+    return res.status(400).json({ success: false, error: "action and admin are required" });
+  }
+
+  try {
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip = Array.isArray(forwarded)
+      ? forwarded[0]
+      : (forwarded || "").split(",")[0].trim() || req.ip || "unknown";
+
+    await admin.firestore().collection("user_mngmnt_logs").add({
+      date: admin.firestore.FieldValue.serverTimestamp(),
+      action,
+      admin: adminEmail,
+      user: user || "-",
+      ip
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Log admin action error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 exports.api = functions.https.onRequest(app);

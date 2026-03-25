@@ -200,7 +200,7 @@ export const DataTable = () => {
         }
     };
     
-    const downloadCSV = () => {
+    const downloadCSV = async () => {
         if (filteredData.length === 0) {
             alert("Brak danych do pobrania.");
             return;
@@ -234,7 +234,26 @@ export const DataTable = () => {
         const csv = Papa.unparse(csvData, { delimiter: ";" });
         const utf8BOM = "\uFEFF" + csv;
         const blob = new Blob([utf8BOM], { type: "text/csv;charset=utf-8;" });
-        saveAs(blob, `kontrole_${dateFilter}.csv`);
+        const fileName = `kontrole_${dateFilter}.csv`;
+        saveAs(blob, fileName);
+
+        try {
+            const apiUrl = process.env.REACT_APP_API_URL;
+            const adminEmail = auth.currentUser?.email || "brak";
+            if (apiUrl) {
+                await fetch(`${apiUrl}/log-admin-action`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "download_csv_controls",
+                        admin: adminEmail,
+                        user: `plik:${fileName}`
+                    })
+                });
+            }
+        } catch (error) {
+            console.error("Błąd zapisu logu pobierania CSV:", error);
+        }
     };
 
     // Remove duplicates within 15 minutes across all filteredData

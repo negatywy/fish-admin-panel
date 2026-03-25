@@ -388,7 +388,7 @@ export const StatsCharts = () => {
             },
             title: {
                 display: true,
-                text: `Statystyki kontroli i patroli - ${getDateRangeLabel()}`,
+                text: `Statystyki kontroli i patroli SSR - ${getDateRangeLabel()}`,
                 font: {
                     size: 16,
                     weight: 'bold'

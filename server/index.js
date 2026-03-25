@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { createUsersWithPattern } = require('./createUsers');
 const { deleteUsers } = require('./deleteUsers');
+const admin = require('firebase-admin');
 
 const app = express();
 app.use(bodyParser.json());
@@ -39,6 +40,30 @@ app.post("/delete-users", async (req, res) => {
   } catch (err) {
     console.error("Batch deletion error:", err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/log-admin-action", async (req, res) => {
+  const { action, admin: adminEmail, user } = req.body;
+  
+  if (!action || !adminEmail || !user) {
+    return res.status(400).json({ success: false, error: "Missing required fields" });
+  }
+
+  try {
+    const db = admin.firestore();
+    await db.collection("user_mngmnt_logs").add({
+      action,
+      admin: adminEmail,
+      user,
+      date: admin.firestore.Timestamp.now(),
+      ip: req.ip || req.connection.remoteAddress || "unknown"
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error logging admin action:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

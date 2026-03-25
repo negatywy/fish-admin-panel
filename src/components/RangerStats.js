@@ -135,6 +135,18 @@ export const RangerStats = () => {
                         clubName: rangerInfo.clubName || "—",
                         controlResults: [],
                     };
+                } else {
+                    // Update name if we have a better one (not "Nieznany")
+                    if (ranger !== "Nieznany" && rangerData[rangerKey].name === "Nieznany") {
+                        rangerData[rangerKey].name = ranger;
+                    }
+                    // Update email and club if we have better info
+                    if (rangerInfo.email !== "Brak e-maila" && rangerData[rangerKey].email === "Brak e-maila") {
+                        rangerData[rangerKey].email = rangerInfo.email;
+                    }
+                    if (rangerInfo.clubName !== "—" && rangerData[rangerKey].clubName === "—") {
+                        rangerData[rangerKey].clubName = rangerInfo.clubName;
+                    }
                 }
 
                 rangerData[rangerKey].controlResults.push({
@@ -286,7 +298,7 @@ export const RangerStats = () => {
         return () => window.removeEventListener("resize", updateRowsPerPage);
     }, []);
 
-    const downloadCSV = () => {
+    const downloadCSV = async () => {
         if (filteredStats.length === 0) {
             alert("Brak danych do pobrania.");
             return;
@@ -306,7 +318,26 @@ export const RangerStats = () => {
         const csv = Papa.unparse(csvData, { delimiter: ";" });
         const utf8BOM = "\uFEFF" + csv;
         const blob = new Blob([utf8BOM], { type: "text/csv;charset=utf-8;" });
-        saveAs(blob, `ranger_stats_${dateFilter}.csv`);
+        const fileName = `ranger_stats_${dateFilter}.csv`;
+        saveAs(blob, fileName);
+
+        try {
+            const apiUrl = process.env.REACT_APP_API_URL;
+            const adminEmail = auth.currentUser?.email || "brak";
+            if (apiUrl) {
+                await fetch(`${apiUrl}/log-admin-action`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "download_csv_ranger_stats",
+                        admin: adminEmail,
+                        user: `plik:${fileName}`
+                    })
+                });
+            }
+        } catch (error) {
+            console.error("Błąd zapisu logu pobierania CSV:", error);
+        }
     };
 
     const handleSort = (key) => {
